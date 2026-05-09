@@ -64,6 +64,7 @@ dependencies {
         exclude(group = "*", module = "FastAsyncWorldEdit-Core")
     }
     compileOnly("com.github.DeadSilenceIV:AdvancedChestsAPI:3.2-BETA")
+    compileOnly("net.luckperms:api:5.5")
 
     testImplementation(platform("org.junit:junit-bom:5.13.1"))
     testImplementation("org.junit.jupiter:junit-jupiter-api")

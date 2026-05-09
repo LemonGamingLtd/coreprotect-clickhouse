@@ -4,8 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import net.coreprotect.event.CoreProtectLookupEvent;
+import net.luckperms.api.LuckPerms;
+import net.luckperms.api.model.user.User;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -603,7 +608,7 @@ public class LookupCommand {
                         }
                     }
 
-                    Runnable runnable = new StandardLookupThread(player, command, rollbackusers, argBlocks, argExclude, argExcludeUsers, getExemptLookupUsers(player, argAction), argAction, argRadius, lo, x, y, z, wid, argWid, timeStart, timeEnd, argNoisy, argExcluded, argRestricted, pa, re, type, ts, count);
+                    Runnable runnable = new StandardLookupThread(player, command, rollbackusers, argBlocks, argExclude, argExcludeUsers, getExemptLookupUsers(player, rollbackusers, argAction), argAction, argRadius, lo, x, y, z, wid, argWid, timeStart, timeEnd, argNoisy, argExcluded, argRestricted, pa, re, type, ts, count);
                     Thread thread = new Thread(runnable);
                     thread.start();
                 }
@@ -644,5 +649,56 @@ public class LookupCommand {
         }
 
         return exemptUsers;
+    }
+
+    private static List<String> getExemptLookupUsers(CommandSender player, List<String> lookupUsers, List<Integer> argAction) {
+        List<String> exemptUsers = getExemptLookupUsers(player, argAction);
+        if ((!argAction.contains(6) && !argAction.contains(7)) || player.hasPermission("coreprotect.exempt")) {
+            return exemptUsers;
+        }
+
+        for (String lookupUser : lookupUsers) {
+            if (lookupUser.startsWith("#") || lookupUser.equalsIgnoreCase(player.getName()) || containsIgnoreCase(exemptUsers, lookupUser)) {
+                continue;
+            }
+
+            if (hasOfflineExemptPermission(lookupUser)) {
+                exemptUsers.add(lookupUser);
+            }
+        }
+
+        return exemptUsers;
+    }
+
+    private static boolean containsIgnoreCase(List<String> values, String needle) {
+        for (String value : values) {
+            if (value.equalsIgnoreCase(needle)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean hasOfflineExemptPermission(String userName) {
+        try {
+            LuckPerms luckPerms = Bukkit.getServicesManager().load(LuckPerms.class);
+            if (luckPerms == null) {
+                return false;
+            }
+
+            CompletableFuture<UUID> uniqueIdFuture = luckPerms.getUserManager().lookupUniqueId(userName);
+            UUID uniqueId = uniqueIdFuture.get(2, TimeUnit.SECONDS);
+            if (uniqueId == null) {
+                return false;
+            }
+
+            CompletableFuture<User> userFuture = luckPerms.getUserManager().loadUser(uniqueId);
+            User user = userFuture.get(2, TimeUnit.SECONDS);
+            return user.getCachedData().getPermissionData().checkPermission("coreprotect.exempt").asBoolean();
+        }
+        catch (Exception e) {
+            return false;
+        }
     }
 }

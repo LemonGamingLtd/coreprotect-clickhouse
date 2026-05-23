@@ -53,9 +53,6 @@ public class ConfigHandler extends Queue {
         MATERIALS, BLOCKDATA, ART, ENTITIES, WORLDS
     }
 
-    private record WorldCacheEntry(int id, String name) {
-    }
-
     public static int SERVER_VERSION = 0;
     public static final int EDITION_VERSION = 2;
     public static final String EDITION_BRANCH = VersionUtils.getBranch();
@@ -96,7 +93,6 @@ public class ConfigHandler extends Queue {
     public static final AtomicInteger MAX_BLOCKDATA_ID = new AtomicInteger();
     public static final AtomicInteger MAX_ENTITY_ID = new AtomicInteger();
     public static final AtomicInteger MAX_ART_ID = new AtomicInteger();
-    public static final Object WORLD_CACHE_LOCK = new Object();
 
     private static <K, V> Map<K, V> syncMap() {
         return Collections.synchronizedMap(new HashMap<>());
@@ -412,35 +408,17 @@ public class ConfigHandler extends Queue {
     }
 
     public static void loadWorlds(Statement statement) {
-        List<WorldCacheEntry> loadedWorlds = new ArrayList<>();
-        int maxWorldId = 0;
+        try (final ResultSet rs = statement.executeQuery("SELECT id,world FROM " + ConfigHandler.prefix + "world")) {
+            ConfigHandler.worlds.clear();
+            ConfigHandler.worldsReversed.clear();
+            MAX_WORLD_ID.set(0);
 
-        try (final ResultSet rs = statement.executeQuery("SELECT id,world FROM " + ConfigHandler.prefix + "world ORDER BY id ASC, rowid ASC")) {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String world = rs.getString("world");
-
-                if (world == null || world.isEmpty()) {
-                    continue;
-                }
-
-                loadedWorlds.add(new WorldCacheEntry(id, world));
-                maxWorldId = Math.max(maxWorldId, id);
-            }
-        }
-        catch (SQLException e) {
-            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load worlds from database", e);
-            return;
-        }
-
-        synchronized (WORLD_CACHE_LOCK) {
-            ConfigHandler.worlds.clear();
-            ConfigHandler.worldsReversed.clear();
-            MAX_WORLD_ID.set(maxWorldId);
-
-            for (WorldCacheEntry entry : loadedWorlds) {
-                ConfigHandler.worlds.merge(entry.name(), entry.id(), Math::min);
-                ConfigHandler.worldsReversed.putIfAbsent(entry.id(), entry.name());
+                ConfigHandler.worlds.put(world, id);
+                ConfigHandler.worldsReversed.put(id, world);
+                MAX_WORLD_ID.updateAndGet(curr -> Math.max(id, curr));
             }
 
             for (final World world : Bukkit.getServer().getWorlds()) {
@@ -452,6 +430,9 @@ public class ConfigHandler extends Queue {
                     Queue.queueWorldInsert(id, worldname);
                 }
             }
+        }
+        catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load worlds from database", e);
         }
     }
 

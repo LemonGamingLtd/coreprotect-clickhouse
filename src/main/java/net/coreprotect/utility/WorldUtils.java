@@ -15,23 +15,25 @@ public class WorldUtils extends Queue {
     }
 
     public static int getWorldId(String name) {
-        Integer id = ConfigHandler.worlds.get(name);
+        synchronized (ConfigHandler.WORLD_CACHE_LOCK) {
+            Integer id = ConfigHandler.worlds.get(name);
 
-        if (id == null) {
-            // Check if another server has already added this world (multi-server setup)
-            id = ConfigHandler.reloadAndGetId(ConfigHandler.CacheType.WORLDS, name);
-            if (id != -1) {
-                return id;
+            if (id == null) {
+                // Check if another server has already added this world (multi-server setup)
+                id = ConfigHandler.reloadAndGetId(ConfigHandler.CacheType.WORLDS, name);
+                if (id != -1) {
+                    return id;
+                }
+
+                id = ConfigHandler.MAX_WORLD_ID.incrementAndGet();
+
+                ConfigHandler.worlds.put(name, id);
+                ConfigHandler.worldsReversed.put(id, name);
+                Queue.queueWorldInsert(id, name);
             }
 
-            id = ConfigHandler.MAX_WORLD_ID.incrementAndGet();
-
-            ConfigHandler.worlds.put(name, id);
-            ConfigHandler.worldsReversed.put(id, name);
-            Queue.queueWorldInsert(id, name);
+            return id;
         }
-
-        return id;
     }
 
     public static int getWorldId(Location location) {

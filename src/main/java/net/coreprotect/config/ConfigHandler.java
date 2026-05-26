@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -93,6 +94,7 @@ public class ConfigHandler extends Queue {
     public static final AtomicInteger MAX_BLOCKDATA_ID = new AtomicInteger();
     public static final AtomicInteger MAX_ENTITY_ID = new AtomicInteger();
     public static final AtomicInteger MAX_ART_ID = new AtomicInteger();
+    public static final Object WORLD_CACHE_LOCK = new Object();
 
     private static <K, V> Map<K, V> syncMap() {
         return Collections.synchronizedMap(new HashMap<>());
@@ -391,9 +393,8 @@ public class ConfigHandler extends Queue {
                         statement.close();
                         return entities.getOrDefault(name, -1);
                     case WORLDS:
-                        loadWorlds(statement);
                         statement.close();
-                        return worlds.getOrDefault(name, -1);
+                        return loadWorldId(connection, name);
                     default:
                         statement.close();
                         return -1;
@@ -407,32 +408,128 @@ public class ConfigHandler extends Queue {
         return -1;
     }
 
-    public static void loadWorlds(Statement statement) {
-        try (final ResultSet rs = statement.executeQuery("SELECT id,world FROM " + ConfigHandler.prefix + "world")) {
-            ConfigHandler.worlds.clear();
-            ConfigHandler.worldsReversed.clear();
-            MAX_WORLD_ID.set(0);
+    private static int loadWorldId(Connection connection, String name) throws SQLException {
+        List<Integer> ids = new ArrayList<>();
+        String query = "SELECT id FROM " + ConfigHandler.prefix + "world WHERE world = ? ORDER BY id ASC, rowid ASC";
 
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, name);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    ids.add(resultSet.getInt("id"));
+                }
+            }
+        }
+
+        for (int id : ids) {
+            String cachedWorld = getFirstWorldName(connection, id);
+            if (name.equals(cachedWorld)) {
+                synchronized (WORLD_CACHE_LOCK) {
+                    Integer cachedId = ConfigHandler.worlds.get(name);
+                    if (cachedId != null) {
+                        return cachedId;
+                    }
+
+                    String existingWorld = ConfigHandler.worldsReversed.get(id);
+                    if (existingWorld != null && !existingWorld.equals(name)) {
+                        continue;
+                    }
+
+                    ConfigHandler.worlds.merge(name, id, Math::min);
+                    ConfigHandler.worldsReversed.putIfAbsent(id, name);
+                    MAX_WORLD_ID.updateAndGet(curr -> Math.max(id, curr));
+                }
+
+                return id;
+            }
+        }
+
+        return -1;
+    }
+
+    private static String getFirstWorldName(Connection connection, int id) throws SQLException {
+        String query = "SELECT world FROM " + ConfigHandler.prefix + "world WHERE id = ? ORDER BY rowid ASC LIMIT 1";
+
+        try (PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setInt(1, id);
+
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("world");
+                }
+            }
+        }
+
+        return null;
+    }
+
+    public static void loadWorlds(Statement statement) {
+        Map<String, Integer> loadedWorlds = new HashMap<>();
+        Map<Integer, String> loadedWorldsReversed = new HashMap<>();
+        int maxWorldId = 0;
+
+        try (final ResultSet rs = statement.executeQuery("SELECT id,world FROM " + ConfigHandler.prefix + "world ORDER BY id ASC, rowid ASC")) {
             while (rs.next()) {
                 int id = rs.getInt("id");
                 String world = rs.getString("world");
-                ConfigHandler.worlds.put(world, id);
-                ConfigHandler.worldsReversed.put(id, world);
-                MAX_WORLD_ID.updateAndGet(curr -> Math.max(id, curr));
+
+                if (world == null || world.isEmpty()) {
+                    continue;
+                }
+
+                String cachedWorld = loadedWorldsReversed.putIfAbsent(id, world);
+                if (cachedWorld == null || cachedWorld.equals(world)) {
+                    loadedWorlds.merge(world, id, Math::min);
+                }
+                maxWorldId = Math.max(maxWorldId, id);
             }
+        }
+        catch (SQLException e) {
+            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load worlds from database", e);
+            return;
+        }
+
+        synchronized (WORLD_CACHE_LOCK) {
+            int assignedMaxWorldId = MAX_WORLD_ID.get();
+            Map<String, Integer> assignedWorlds = new HashMap<>(ConfigHandler.worlds);
+
+            ConfigHandler.worlds.clear();
+            ConfigHandler.worldsReversed.clear();
+            ConfigHandler.worlds.putAll(loadedWorlds);
+            ConfigHandler.worldsReversed.putAll(loadedWorldsReversed);
+
+            for (Map.Entry<String, Integer> entry : assignedWorlds.entrySet()) {
+                String world = entry.getKey();
+                Integer id = entry.getValue();
+                if (world == null || world.isEmpty() || id == null || ConfigHandler.worlds.containsKey(world)) {
+                    continue;
+                }
+
+                String cachedWorld = ConfigHandler.worldsReversed.get(id);
+                if (cachedWorld == null) {
+                    ConfigHandler.worlds.put(world, id);
+                    ConfigHandler.worldsReversed.put(id, world);
+                    maxWorldId = Math.max(maxWorldId, id);
+                }
+            }
+
+            MAX_WORLD_ID.set(Math.max(assignedMaxWorldId, maxWorldId));
 
             for (final World world : Bukkit.getServer().getWorlds()) {
                 String worldname = world.getName();
                 if (!ConfigHandler.worlds.containsKey(worldname)) {
-                    int id = MAX_WORLD_ID.incrementAndGet();
+                    int id;
+                    do {
+                        id = MAX_WORLD_ID.incrementAndGet();
+                    }
+                    while (ConfigHandler.worldsReversed.containsKey(id));
+
                     ConfigHandler.worlds.put(worldname, id);
                     ConfigHandler.worldsReversed.put(id, worldname);
                     Queue.queueWorldInsert(id, worldname);
                 }
             }
-        }
-        catch (SQLException e) {
-            CoreProtect.getInstance().getSLF4JLogger().warn("Failed to load worlds from database", e);
         }
     }
 

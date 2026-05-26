@@ -18,17 +18,28 @@ public class WorldUtils extends Queue {
         Integer id = ConfigHandler.worlds.get(name);
 
         if (id == null) {
-            // Check if another server has already added this world (multi-server setup)
+            // Check if another server has already added this world. This can reload the
+            // world cache, so keep it outside WORLD_CACHE_LOCK to avoid blocking the
+            // server thread on database I/O during rapid world load/unload cycles.
             id = ConfigHandler.reloadAndGetId(ConfigHandler.CacheType.WORLDS, name);
             if (id != -1) {
                 return id;
             }
 
-            id = ConfigHandler.MAX_WORLD_ID.incrementAndGet();
+            synchronized (ConfigHandler.WORLD_CACHE_LOCK) {
+                id = ConfigHandler.worlds.get(name);
 
-            ConfigHandler.worlds.put(name, id);
-            ConfigHandler.worldsReversed.put(id, name);
-            Queue.queueWorldInsert(id, name);
+                if (id == null) {
+                    do {
+                        id = ConfigHandler.MAX_WORLD_ID.incrementAndGet();
+                    }
+                    while (ConfigHandler.worldsReversed.containsKey(id));
+
+                    ConfigHandler.worlds.put(name, id);
+                    ConfigHandler.worldsReversed.put(id, name);
+                    Queue.queueWorldInsert(id, name);
+                }
+            }
         }
 
         return id;

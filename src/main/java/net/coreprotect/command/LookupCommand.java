@@ -49,6 +49,7 @@ public class LookupCommand {
         List<String> argExcludeUsers = CommandParser.parseExcludedUsers(player, args);
         String ts = CommandParser.parseTimeString(args);
         long[] argTime = CommandParser.parseTime(args);
+        long[] argDateTime = CommandParser.parseDateTime(args);
         long startTime = argTime[0];
         long endTime = argTime[1];
         int argWid = CommandParser.parseWorld(args, true, true);
@@ -75,6 +76,11 @@ public class LookupCommand {
 
         int argExcluded = argExclude.size();
         int argRestricted = argBlocks.size();
+        boolean absoluteDateTime = argDateTime != null;
+
+        if (absoluteDateTime) {
+            ts = CommandParser.parseDateTimeString(args);
+        }
 
         /* check for invalid block/entity combinations (include) */
         boolean hasBlock = false;
@@ -262,7 +268,7 @@ public class LookupCommand {
             }
         }
 
-        if (startTime <= 0 && !pageLookup && type == 4 && (argBlocks.size() > 0 || argUsers.size() > 0)) {
+        if (!absoluteDateTime && startTime <= 0 && !pageLookup && type == 4 && (argBlocks.size() > 0 || argUsers.size() > 0)) {
             Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.MISSING_LOOKUP_TIME, Selector.FIRST));
             return;
         }
@@ -594,13 +600,19 @@ public class LookupCommand {
                     Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Color.ITALIC + Phrase.build(Phrase.LOOKUP_SEARCHING));
 
                     if (timeStart == -1) {
-                        if (startTime <= 0) {
+                        if (absoluteDateTime) {
+                            timeStart = argDateTime[0];
+                        }
+                        else if (startTime <= 0) {
                             timeStart = 0;
                         }
                         else {
                             timeStart = (System.currentTimeMillis() / 1000L) - startTime;
                         }
-                        if (endTime <= 0) {
+                        if (absoluteDateTime) {
+                            timeEnd = argDateTime[1];
+                        }
+                        else if (endTime <= 0) {
                             timeEnd = 0;
                         }
                         else {

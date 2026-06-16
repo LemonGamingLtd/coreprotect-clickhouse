@@ -1,6 +1,10 @@
 package net.coreprotect.command.parser;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
 import java.util.Locale;
 
 import net.coreprotect.language.Phrase;
@@ -10,6 +14,8 @@ import net.coreprotect.language.Selector;
  * Parser for time-related command arguments
  */
 public class TimeParser {
+
+    private static final ZoneId SERVER_ZONE = ZoneId.systemDefault();
 
     /**
      * Parse time from command arguments
@@ -318,6 +324,44 @@ public class TimeParser {
     }
 
     /**
+     * Parse absolute date/time lookup bounds from command arguments.
+     *
+     * Supported forms:
+     * date:yyyy-MM-dd
+     * date:yyyy-MM-dd_HH:mm[:ss]
+     * date:start..end
+     * from:start to:end
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return Absolute Unix-second bounds [start, end], or null if no absolute date was provided
+     */
+    public static long[] parseDateTime(String[] inputArguments) {
+        DateTimeRange range = parseDateTimeRange(inputArguments);
+        if (range == null) {
+            return null;
+        }
+
+        return new long[] { range.startTime(), range.endTime() };
+    }
+
+    /**
+     * Parse absolute date/time lookup bounds for display.
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return A formatted date/time string, or an empty string if none was provided
+     */
+    public static String parseDateTimeString(String[] inputArguments) {
+        DateTimeRange range = parseDateTimeRange(inputArguments);
+        if (range == null) {
+            return "";
+        }
+
+        return range.display();
+    }
+
+    /**
      * Parse rows from command arguments
      * 
      * @param inputArguments
@@ -363,4 +407,150 @@ public class TimeParser {
     private static String timeString(BigDecimal input) {
         return input.stripTrailingZeros().toPlainString();
     }
+
+    private static DateTimeRange parseDateTimeRange(String[] inputArguments) {
+        String[] argumentArray = inputArguments.clone();
+        DateTimeBound from = null;
+        DateTimeBound to = null;
+        DateTimeBound single = null;
+        int count = 0;
+        int next = 0;
+
+        for (String argument : argumentArray) {
+            if (count > 0) {
+                String sanitizedArgument = sanitizeDateTimeArgument(argument);
+                String lowerArgument = sanitizedArgument.toLowerCase(Locale.ROOT);
+
+                if (lowerArgument.equals("date:") || lowerArgument.equals("dt:")) {
+                    next = 1;
+                }
+                else if (lowerArgument.equals("from:") || lowerArgument.equals("after:")) {
+                    next = 2;
+                }
+                else if (lowerArgument.equals("to:") || lowerArgument.equals("before:") || lowerArgument.equals("until:")) {
+                    next = 3;
+                }
+                else if (next == 1 || lowerArgument.startsWith("date:") || lowerArgument.startsWith("dt:")) {
+                    String value = stripDateTimePrefix(sanitizedArgument, lowerArgument, "date:", "dt:");
+                    DateTimeRange parsedRange = parseDateTimeRangeValue(value);
+                    if (parsedRange != null) {
+                        return parsedRange;
+                    }
+                    single = parseDateTimeBound(value);
+                    next = 0;
+                }
+                else if (next == 2 || lowerArgument.startsWith("from:") || lowerArgument.startsWith("after:")) {
+                    String value = stripDateTimePrefix(sanitizedArgument, lowerArgument, "from:", "after:");
+                    from = parseDateTimeBound(value);
+                    next = 0;
+                }
+                else if (next == 3 || lowerArgument.startsWith("to:") || lowerArgument.startsWith("before:") || lowerArgument.startsWith("until:")) {
+                    String value = stripDateTimePrefix(sanitizedArgument, lowerArgument, "to:", "before:", "until:");
+                    to = parseDateTimeBound(value);
+                    next = 0;
+                }
+                else {
+                    next = 0;
+                }
+            }
+            count++;
+        }
+
+        if (from != null || to != null) {
+            return buildDateTimeRange(from, to);
+        }
+
+        if (single != null) {
+            return new DateTimeRange(single.startTime(), single.endTime(), single.display());
+        }
+
+        return null;
+    }
+
+    private static DateTimeRange parseDateTimeRangeValue(String value) {
+        if (!value.contains("..")) {
+            return null;
+        }
+
+        String[] values = value.split("\\.\\.", 2);
+        DateTimeBound from = parseDateTimeBound(values[0]);
+        DateTimeBound to = values.length > 1 ? parseDateTimeBound(values[1]) : null;
+        return buildDateTimeRange(from, to);
+    }
+
+    private static DateTimeRange buildDateTimeRange(DateTimeBound from, DateTimeBound to) {
+        if (from == null && to == null) {
+            return null;
+        }
+
+        long startTime = from == null ? 0 : from.startTime();
+        long endTime = to == null ? 0 : to.endTime();
+        DateTimeBound displayFrom = from;
+        DateTimeBound displayTo = to;
+
+        if (startTime > 0 && endTime > 0 && startTime >= endTime) {
+            startTime = to.startTime();
+            endTime = from.endTime();
+            displayFrom = to;
+            displayTo = from;
+        }
+
+        String display;
+        if (displayFrom != null && displayTo != null) {
+            display = displayFrom.display() + " - " + displayTo.display();
+        }
+        else if (displayFrom != null) {
+            display = "after " + displayFrom.display();
+        }
+        else {
+            display = "before " + displayTo.display();
+        }
+
+        return new DateTimeRange(startTime, endTime, display);
+    }
+
+    private static DateTimeBound parseDateTimeBound(String input) {
+        if (input == null || input.isBlank()) {
+            return null;
+        }
+
+        String value = input.trim();
+        try {
+            LocalDate date = LocalDate.parse(value);
+            long startTime = date.atStartOfDay(SERVER_ZONE).toEpochSecond() - 1;
+            long endTime = date.plusDays(1).atStartOfDay(SERVER_ZONE).toEpochSecond() - 1;
+            return new DateTimeBound(startTime, endTime, date.toString());
+        }
+        catch (DateTimeParseException ignored) {}
+
+        String normalizedValue = value.replace('_', 'T').replace(' ', 'T');
+        try {
+            LocalDateTime dateTime = LocalDateTime.parse(normalizedValue);
+            boolean hasSeconds = normalizedValue.length() > 16;
+            long startTime = dateTime.atZone(SERVER_ZONE).toEpochSecond() - 1;
+            long endTime = dateTime.plusSeconds(hasSeconds ? 1 : 60).atZone(SERVER_ZONE).toEpochSecond() - 1;
+            return new DateTimeBound(startTime, endTime, value);
+        }
+        catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    private static String sanitizeDateTimeArgument(String argument) {
+        return argument.trim().replaceAll("\\\\", "").replaceAll("'", "");
+    }
+
+    private static String stripDateTimePrefix(String argument, String lowerArgument, String... prefixes) {
+        for (String prefix : prefixes) {
+            if (lowerArgument.startsWith(prefix)) {
+                return argument.substring(prefix.length());
+            }
+        }
+
+        return argument;
+    }
+
+    private record DateTimeBound(long startTime, long endTime, String display) {}
+
+    private record DateTimeRange(long startTime, long endTime, String display) {}
 }

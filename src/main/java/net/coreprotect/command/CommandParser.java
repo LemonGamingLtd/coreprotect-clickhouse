@@ -1,6 +1,5 @@
 package net.coreprotect.command;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -209,6 +208,28 @@ public class CommandParser {
     }
 
     /**
+     * Parse absolute date/time from command arguments
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return Absolute Unix-second bounds [start, end], or null if no absolute date was provided
+     */
+    protected static long[] parseDateTime(String[] inputArguments) {
+        return TimeParser.parseDateTime(inputArguments);
+    }
+
+    /**
+     * Parse absolute date/time from command arguments for display
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return A formatted date/time string
+     */
+    protected static String parseDateTimeString(String[] inputArguments) {
+        return TimeParser.parseDateTimeString(inputArguments);
+    }
+
+    /**
      * Parse rows from command arguments
      * 
      * @param inputArguments
@@ -313,17 +334,6 @@ public class CommandParser {
      */
     protected static List<String> parseUsers(String[] inputArguments) {
         return UserParser.parseUsers(inputArguments);
-    }
-
-    /**
-     * Helper method for formatting BigDecimal values
-     * 
-     * @param input
-     *            The BigDecimal value to format
-     * @return The formatted string
-     */
-    private static String timeString(BigDecimal input) {
-        return input.stripTrailingZeros().toPlainString();
     }
 
 }

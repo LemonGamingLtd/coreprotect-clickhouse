@@ -24,6 +24,7 @@ public class TabHandler implements TabCompleter {
     // private static String[] COMMANDS = new String[] { "help", "inspect", "rollback", "restore", "lookup", "purge", "reload", "status", "near", "undo" }; // max 10!
     private static final String[] HELP = new String[] { "inspect", "rollback", "restore", "lookup", "purge", "teleport", "status", "params", "users", "time", "radius", "action", "include", "exclude" };
     private static final String[] PARAMS = new String[] { "user:", "time:", "radius:", "action:", "include:", "exclude:", "#container" };
+    private static final String[] DATE_PARAMS = new String[] { "date:", "from:", "to:" };
     private static final String[] ACTIONS = new String[] { "block", "+block", "-block", "click", "kill", "+container", "-container", "container", "chat", "command", "+inventory", "-inventory", "inventory", "item", "+item", "-item", "sign", "session", "+session", "-session", "username", "death" };
     private static final String[] NUMBERS = new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
     private static final String[] TIMES = new String[] { "w", "d", "h", "m", "s" };
@@ -121,6 +122,10 @@ public class TabHandler implements TabCompleter {
         return (sender.hasPermission("coreprotect.lookup") && (cmd.equals("l") || cmd.equals("lookup"))) || (sender.hasPermission("coreprotect.rollback") && (cmd.equals("rollback") || cmd.equals("rb") || cmd.equals("ro"))) || (sender.hasPermission("coreprotect.restore") && (cmd.equals("restore") || cmd.equals("rs") || cmd.equals("re")));
     }
 
+    private boolean isLookupCommand(String cmd) {
+        return cmd.equals("l") || cmd.equals("lookup");
+    }
+
     private boolean isActionParam(String lastArg, String currentArg) {
         return lastArg.equals("a:") || lastArg.equals("action:") || currentArg.startsWith("a:") || currentArg.startsWith("action:");
     }
@@ -156,6 +161,9 @@ public class TabHandler implements TabCompleter {
         boolean hasCount;
         boolean hasPreview;
         boolean hasPage;
+        boolean hasDate;
+        boolean hasDateFrom;
+        boolean hasDateTo;
         boolean validContainer;
         boolean pageLookup;
     }
@@ -192,6 +200,15 @@ public class TabHandler implements TabCompleter {
             }
             else if (arg.contains("t:") || arg.contains("time:")) {
                 state.hasTime = true;
+            }
+            else if (arg.contains("date:") || arg.contains("dt:")) {
+                state.hasDate = true;
+            }
+            else if (arg.contains("from:") || arg.contains("after:")) {
+                state.hasDateFrom = true;
+            }
+            else if (arg.contains("to:") || arg.contains("before:") || arg.contains("until:")) {
+                state.hasDateTo = true;
             }
             else if (arg.contains("e:") || arg.contains("exclude:")) {
                 state.hasExclude = true;
@@ -500,6 +517,9 @@ public class TabHandler implements TabCompleter {
                 params.add(param);
             }
         }
+        if (isLookupCommand(lastArgument)) {
+            addDateParams(params, state);
+        }
         if (firstParam && state.pageLookup && (lastArgument.equals("l") || lastArgument.equals("lookup"))) {
             params.add("page:");
         }
@@ -513,5 +533,21 @@ public class TabHandler implements TabCompleter {
         }
 
         return params;
+    }
+
+    private void addDateParams(ArrayList<String> params, ParamState state) {
+        if (state.hasTime || state.hasDate) {
+            return;
+        }
+
+        if (!state.hasDateFrom && !state.hasDateTo) {
+            params.addAll(Arrays.asList(DATE_PARAMS));
+        }
+        else if (state.hasDateFrom && !state.hasDateTo) {
+            params.add("to:");
+        }
+        else if (!state.hasDateFrom && state.hasDateTo) {
+            params.add("from:");
+        }
     }
 }

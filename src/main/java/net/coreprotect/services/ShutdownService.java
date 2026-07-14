@@ -87,6 +87,11 @@ public class ShutdownService {
         int lastConsumerSize = -1;
         int stuckDetectionCount = 0;
 
+        if (Consumer.isConsumerThread()) {
+            Chat.console("Shutdown requested from the consumer thread, skipping wait for pending data.");
+            return;
+        }
+
         while ((Consumer.isRunning() || ConfigHandler.converterRunning) && !ConfigHandler.purgeRunning) {
             long currentTime = System.currentTimeMillis();
 

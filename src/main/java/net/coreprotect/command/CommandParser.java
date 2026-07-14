@@ -1,5 +1,6 @@
 package net.coreprotect.command;
 
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -230,8 +231,41 @@ public class CommandParser {
     }
 
     /**
+     * Parse the timezone from command arguments
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return The timezone, or null if none was provided or the provided value was invalid
+     */
+    protected static ZoneId parseTimezone(String[] inputArguments) {
+        return TimeParser.parseTimezone(inputArguments);
+    }
+
+    /**
+     * Parse the raw, unvalidated timezone value from command arguments
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return The timezone as entered, or an empty string if none was provided
+     */
+    protected static String parseTimezoneString(String[] inputArguments) {
+        return TimeParser.parseTimezoneString(inputArguments);
+    }
+
+    /**
+     * Convert a timezone value into a zone
+     *
+     * @param value
+     *            The timezone value
+     * @return The timezone, or null if the value is empty or not a valid timezone
+     */
+    protected static ZoneId parseZoneId(String value) {
+        return TimeParser.parseZoneId(value);
+    }
+
+    /**
      * Parse rows from command arguments
-     * 
+     *
      * @param inputArguments
      *            The command arguments
      * @return The number of rows

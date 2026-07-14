@@ -1,7 +1,9 @@
 package net.coreprotect.command;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -25,10 +27,12 @@ public class TabHandler implements TabCompleter {
     private static final String[] HELP = new String[] { "inspect", "rollback", "restore", "lookup", "purge", "teleport", "status", "params", "users", "time", "radius", "action", "include", "exclude" };
     private static final String[] PARAMS = new String[] { "user:", "time:", "radius:", "action:", "include:", "exclude:", "#container" };
     private static final String[] DATE_PARAMS = new String[] { "date:", "from:", "to:" };
+    private static final String[] TIMEZONE_PARAMS = new String[] { "timezone:" };
     private static final String[] ACTIONS = new String[] { "block", "+block", "-block", "click", "kill", "+container", "-container", "container", "chat", "command", "+inventory", "-inventory", "inventory", "item", "+item", "-item", "sign", "session", "+session", "-session", "username", "death" };
     private static final String[] NUMBERS = new String[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" };
     private static final String[] TIMES = new String[] { "w", "d", "h", "m", "s" };
     public static ArrayList<String> materials = null;
+    public static ArrayList<String> timezones = null;
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
@@ -55,6 +59,9 @@ public class TabHandler implements TabCompleter {
         }
         else if (isTimeParam(lastArg, currentArg) && hasTimePermission(sender)) {
             return handleTimeParamCompletions(currentArg, lastArg);
+        }
+        else if (isTimezoneParam(lastArg, currentArg) && hasLookupPermission(sender)) {
+            return handleTimezoneParamCompletions(currentArg, lastArg);
         }
         else if (isPageParam(lastArg, currentArg) && hasPagePermission(sender)) {
             return handlePageParamCompletions(currentArg, lastArg);
@@ -138,6 +145,10 @@ public class TabHandler implements TabCompleter {
         return lastArg.equals("t:") || lastArg.equals("time:") || currentArg.startsWith("t:") || currentArg.startsWith("time:");
     }
 
+    private boolean isTimezoneParam(String lastArg, String currentArg) {
+        return lastArg.equals("timezone:") || lastArg.equals("tz:") || currentArg.startsWith("timezone:") || currentArg.startsWith("tz:");
+    }
+
     private boolean isPageParam(String lastArg, String currentArg) {
         return lastArg.equals("page:") || currentArg.startsWith("page:");
     }
@@ -164,6 +175,7 @@ public class TabHandler implements TabCompleter {
         boolean hasDate;
         boolean hasDateFrom;
         boolean hasDateTo;
+        boolean hasTimezone;
         boolean validContainer;
         boolean pageLookup;
     }
@@ -200,6 +212,9 @@ public class TabHandler implements TabCompleter {
             }
             else if (arg.contains("t:") || arg.contains("time:")) {
                 state.hasTime = true;
+            }
+            else if (arg.contains("timezone:") || arg.contains("tz:")) {
+                state.hasTimezone = true;
             }
             else if (arg.contains("date:") || arg.contains("dt:")) {
                 state.hasDate = true;
@@ -311,6 +326,38 @@ public class TabHandler implements TabCompleter {
         }
 
         return StringUtil.copyPartialMatches(filter + arg, completions, new ArrayList<>(completions.size()));
+    }
+
+    private List<String> handleTimezoneParamCompletions(String currentArg, String lastArg) {
+        String filter = "";
+        String arg = currentArg;
+        if (currentArg.contains(":")) {
+            String[] split = currentArg.split(":", 2);
+            filter = split[0] + ":";
+            if (split.length > 1) {
+                arg = split[1];
+            }
+            else {
+                arg = "";
+            }
+        }
+
+        initializeTimezonesIfNeeded();
+
+        List<String> completions = new ArrayList<>(timezones);
+        for (int index = 0; index < completions.size(); index++) {
+            completions.set(index, filter + completions.get(index));
+        }
+
+        return StringUtil.copyPartialMatches(filter + arg, completions, new ArrayList<>(completions.size()));
+    }
+
+    private void initializeTimezonesIfNeeded() {
+        if (timezones == null) {
+            List<String> timezoneList = new ArrayList<>(ZoneId.getAvailableZoneIds());
+            Collections.sort(timezoneList);
+            timezones = new ArrayList<>(timezoneList);
+        }
     }
 
     private List<String> handlePageParamCompletions(String currentArg, String lastArg) {
@@ -519,6 +566,9 @@ public class TabHandler implements TabCompleter {
         }
         if (isLookupCommand(lastArgument)) {
             addDateParams(params, state);
+            if (!state.hasTimezone) {
+                params.addAll(Arrays.asList(TIMEZONE_PARAMS));
+            }
         }
         if (firstParam && state.pageLookup && (lastArgument.equals("l") || lastArgument.equals("lookup"))) {
             params.add("page:");

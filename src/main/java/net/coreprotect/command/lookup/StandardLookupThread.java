@@ -3,6 +3,7 @@ package net.coreprotect.command.lookup;
 import java.sql.Connection;
 import java.sql.Statement;
 import java.text.NumberFormat;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -73,9 +74,10 @@ public class StandardLookupThread implements Runnable {
     private final int displayResults;
     private final int typeLookup;
     private final String rtime;
+    private final ZoneId timezone;
     private final boolean count;
 
-    public StandardLookupThread(CommandSender player, Command command, List<String> rollbackUsers, List<Object> blockList, Map<Object, Boolean> excludedBlocks, List<String> excludedUsers, List<String> exemptUsers, List<Integer> actions, Integer[] radius, Location location, int x, int y, int z, int worldId, int argWorldId, long timeStart, long timeEnd, int noisy, int excluded, int restricted, int page, int displayResults, int typeLookup, String rtime, boolean count) {
+    public StandardLookupThread(CommandSender player, Command command, List<String> rollbackUsers, List<Object> blockList, Map<Object, Boolean> excludedBlocks, List<String> excludedUsers, List<String> exemptUsers, List<Integer> actions, Integer[] radius, Location location, int x, int y, int z, int worldId, int argWorldId, long timeStart, long timeEnd, int noisy, int excluded, int restricted, int page, int displayResults, int typeLookup, String rtime, ZoneId timezone, boolean count) {
         this.player = player;
         this.command = command;
         this.rollbackUsers = rollbackUsers;
@@ -100,6 +102,7 @@ public class StandardLookupThread implements Runnable {
         this.displayResults = displayResults;
         this.typeLookup = typeLookup;
         this.rtime = rtime;
+        this.timezone = timezone;
         this.count = count;
     }
 
@@ -115,6 +118,7 @@ public class StandardLookupThread implements Runnable {
             ConfigHandler.lookupCommand.put(player.getName(), bc);
             ConfigHandler.lookupPage.put(player.getName(), page);
             ConfigHandler.lookupTime.put(player.getName(), rtime);
+            ConfigHandler.lookupTimezone.put(player.getName(), timezone);
             ConfigHandler.lookupType.put(player.getName(), 5);
             ConfigHandler.lookupElist.put(player.getName(), excludedBlocks);
             ConfigHandler.lookupEUserlist.put(player.getName(), excludedUsers);
@@ -234,7 +238,7 @@ public class StandardLookupThread implements Runnable {
                 switch (lookupResult) {
                     case ChatLookupResult chatResult -> {
                         for (ChatLookupData data : chatResult.data()) {
-                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true, timezone);
                             final String dash = data.cancelled() ? Color.RED + "<hover:show_text:'This message was cancelled and was not sent'>-</hover>" : Color.WHITE + "-";
 
                             Chat.sendComponent(player, timeAgo + " " + dash + " " + Color.DARK_AQUA + data.playerName() + ": " + Color.WHITE + ChatUtils.formatHoverCoordinates(command.getName(), data.worldId(), data.x(), data.y(), data.z()), data.message());
@@ -245,7 +249,7 @@ public class StandardLookupThread implements Runnable {
                     }
                     case SessionLookupResult sessionResult -> {
                         for (SessionLookupData data : sessionResult.data()) {
-                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true, timezone);
                             int timeLength = 50 + (ChatUtils.getTimeSince(data.time(), currentUnixSeconds, false).replaceAll("[^0-9]", "").length() * 6);
                             String leftPadding = Strings.padStart("", 10, ' ');
 
@@ -266,7 +270,7 @@ public class StandardLookupThread implements Runnable {
                     case UsernameHistoryLookupResult usernameHistoryResult -> {
                         for (UsernameHistoryData data : usernameHistoryResult.data()) {
                             String user = ConfigHandler.uuidCacheReversed.get(data.uuid());
-                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true, timezone);
 
                             Chat.sendComponent(player, timeAgo + " " + Color.WHITE + "- " + Phrase.build(Phrase.LOOKUP_USERNAME, Color.DARK_AQUA + user + Color.WHITE, Color.DARK_AQUA + data.username() + Color.WHITE));
                             PluginChannelListener.getInstance().sendUsernameData(player, data.time(), user, data.username());
@@ -274,7 +278,7 @@ public class StandardLookupThread implements Runnable {
                     }
                     case SignLookupResult signResult -> {
                         for (SignLookupData data : signResult.data()) {
-                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                            String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true, timezone);
                             int timeLength = 50 + (ChatUtils.getTimeSince(data.time(), currentUnixSeconds, false).replaceAll("[^0-9]", "").length() * 6);
                             String leftPadding = Strings.padStart("", 10, ' ');
                             if (timeLength % 4 == 0) {
@@ -301,7 +305,7 @@ public class StandardLookupThread implements Runnable {
                                 int dataY = data.y();
                                 int dataZ = data.z();
                                 String rollbackDecoration = ((data.rolledBack() == 2 || data.rolledBack() == 3) ? Color.STRIKETHROUGH : "");
-                                String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                                String timeAgo = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true, timezone);
                                 Material blockType = ItemUtils.itemFilter(MaterialUtils.getType(dtype), data.table() == 0);
                                 String dname = StringUtils.nameFilter(blockType.name().toLowerCase(Locale.ROOT), ddata);
                                 String itemData = data.metadata();
@@ -351,7 +355,7 @@ public class StandardLookupThread implements Runnable {
                                 int amount = data.amount();
                                 String tag = Color.WHITE + "-";
 
-                                String timeago = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true);
+                                String timeago = ChatUtils.getTimeSince(data.time(), currentUnixSeconds, true, timezone);
                                 int timeLength = 50 + (ChatUtils.getTimeSince(data.time(), currentUnixSeconds, false).replaceAll("[^0-9]", "").length() * 6);
                                 String leftPadding = Strings.padStart("", 10, ' ');
                                 if (timeLength % 4 == 0) {

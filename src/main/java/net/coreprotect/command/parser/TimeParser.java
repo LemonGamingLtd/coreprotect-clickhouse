@@ -1,6 +1,7 @@
 package net.coreprotect.command.parser;
 
 import java.math.BigDecimal;
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -362,8 +363,102 @@ public class TimeParser {
     }
 
     /**
+     * Parse the timezone from command arguments.
+     *
+     * Supported forms:
+     * timezone:America/New_York
+     * tz:UTC
+     * tz:+02:00
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return The timezone, or null if none was provided or the provided value was invalid
+     */
+    public static ZoneId parseTimezone(String[] inputArguments) {
+        return parseZoneId(parseTimezoneString(inputArguments));
+    }
+
+    /**
+     * Parse the raw, unvalidated timezone value from command arguments.
+     *
+     * @param inputArguments
+     *            The command arguments
+     * @return The timezone as entered, or an empty string if none was provided
+     */
+    public static String parseTimezoneString(String[] inputArguments) {
+        String[] argumentArray = inputArguments.clone();
+        String timezone = "";
+        int count = 0;
+        int next = 0;
+
+        for (String argument : argumentArray) {
+            if (count > 0) {
+                String sanitizedArgument = sanitizeDateTimeArgument(argument);
+                String lowerArgument = sanitizedArgument.toLowerCase(Locale.ROOT);
+
+                if (lowerArgument.equals("timezone:") || lowerArgument.equals("tz:")) {
+                    next = 1;
+                }
+                else if (next == 1 || lowerArgument.startsWith("timezone:") || lowerArgument.startsWith("tz:")) {
+                    timezone = stripDateTimePrefix(sanitizedArgument, lowerArgument, "timezone:", "tz:");
+                    next = 0;
+                }
+                else {
+                    next = 0;
+                }
+            }
+            count++;
+        }
+
+        return timezone.trim();
+    }
+
+    /**
+     * Convert a timezone value into a zone. Region ids ("America/New_York"), offsets ("+02:00"),
+     * and the common abbreviations in {@link ZoneId#SHORT_IDS} ("EST", "PST") are all supported.
+     *
+     * @param value
+     *            The timezone value
+     * @return The timezone, or null if the value is empty or not a valid timezone
+     */
+    public static ZoneId parseZoneId(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+
+        String zoneValue = value.trim();
+        ZoneId zone = zoneId(zoneValue);
+        if (zone != null) {
+            return zone;
+        }
+
+        // zone ids are case sensitive, so retry the values a player is likely to type in lower case
+        zone = zoneId(zoneValue.toUpperCase(Locale.ROOT));
+        if (zone != null) {
+            return zone;
+        }
+
+        for (String availableZone : ZoneId.getAvailableZoneIds()) {
+            if (availableZone.equalsIgnoreCase(zoneValue)) {
+                return zoneId(availableZone);
+            }
+        }
+
+        return null;
+    }
+
+    private static ZoneId zoneId(String value) {
+        try {
+            return ZoneId.of(value, ZoneId.SHORT_IDS);
+        }
+        catch (DateTimeException ignored) {
+            return null;
+        }
+    }
+
+    /**
      * Parse rows from command arguments
-     * 
+     *
      * @param inputArguments
      *            The command arguments
      * @return The number of rows
@@ -410,6 +505,11 @@ public class TimeParser {
 
     private static DateTimeRange parseDateTimeRange(String[] inputArguments) {
         String[] argumentArray = inputArguments.clone();
+        ZoneId zone = parseTimezone(inputArguments);
+        if (zone == null) {
+            zone = SERVER_ZONE;
+        }
+
         DateTimeBound from = null;
         DateTimeBound to = null;
         DateTimeBound single = null;
@@ -432,21 +532,21 @@ public class TimeParser {
                 }
                 else if (next == 1 || lowerArgument.startsWith("date:") || lowerArgument.startsWith("dt:")) {
                     String value = stripDateTimePrefix(sanitizedArgument, lowerArgument, "date:", "dt:");
-                    DateTimeRange parsedRange = parseDateTimeRangeValue(value);
+                    DateTimeRange parsedRange = parseDateTimeRangeValue(value, zone);
                     if (parsedRange != null) {
                         return parsedRange;
                     }
-                    single = parseDateTimeBound(value);
+                    single = parseDateTimeBound(value, zone);
                     next = 0;
                 }
                 else if (next == 2 || lowerArgument.startsWith("from:") || lowerArgument.startsWith("after:")) {
                     String value = stripDateTimePrefix(sanitizedArgument, lowerArgument, "from:", "after:");
-                    from = parseDateTimeBound(value);
+                    from = parseDateTimeBound(value, zone);
                     next = 0;
                 }
                 else if (next == 3 || lowerArgument.startsWith("to:") || lowerArgument.startsWith("before:") || lowerArgument.startsWith("until:")) {
                     String value = stripDateTimePrefix(sanitizedArgument, lowerArgument, "to:", "before:", "until:");
-                    to = parseDateTimeBound(value);
+                    to = parseDateTimeBound(value, zone);
                     next = 0;
                 }
                 else {
@@ -467,14 +567,14 @@ public class TimeParser {
         return null;
     }
 
-    private static DateTimeRange parseDateTimeRangeValue(String value) {
+    private static DateTimeRange parseDateTimeRangeValue(String value, ZoneId zone) {
         if (!value.contains("..")) {
             return null;
         }
 
         String[] values = value.split("\\.\\.", 2);
-        DateTimeBound from = parseDateTimeBound(values[0]);
-        DateTimeBound to = values.length > 1 ? parseDateTimeBound(values[1]) : null;
+        DateTimeBound from = parseDateTimeBound(values[0], zone);
+        DateTimeBound to = values.length > 1 ? parseDateTimeBound(values[1], zone) : null;
         return buildDateTimeRange(from, to);
     }
 
@@ -509,7 +609,7 @@ public class TimeParser {
         return new DateTimeRange(startTime, endTime, display);
     }
 
-    private static DateTimeBound parseDateTimeBound(String input) {
+    private static DateTimeBound parseDateTimeBound(String input, ZoneId zone) {
         if (input == null || input.isBlank()) {
             return null;
         }
@@ -517,8 +617,8 @@ public class TimeParser {
         String value = input.trim();
         try {
             LocalDate date = LocalDate.parse(value);
-            long startTime = date.atStartOfDay(SERVER_ZONE).toEpochSecond() - 1;
-            long endTime = date.plusDays(1).atStartOfDay(SERVER_ZONE).toEpochSecond() - 1;
+            long startTime = date.atStartOfDay(zone).toEpochSecond() - 1;
+            long endTime = date.plusDays(1).atStartOfDay(zone).toEpochSecond() - 1;
             return new DateTimeBound(startTime, endTime, date.toString());
         }
         catch (DateTimeParseException ignored) {}
@@ -527,8 +627,8 @@ public class TimeParser {
         try {
             LocalDateTime dateTime = LocalDateTime.parse(normalizedValue);
             boolean hasSeconds = normalizedValue.length() > 16;
-            long startTime = dateTime.atZone(SERVER_ZONE).toEpochSecond() - 1;
-            long endTime = dateTime.plusSeconds(hasSeconds ? 1 : 60).atZone(SERVER_ZONE).toEpochSecond() - 1;
+            long startTime = dateTime.atZone(zone).toEpochSecond() - 1;
+            long endTime = dateTime.plusSeconds(hasSeconds ? 1 : 60).atZone(zone).toEpochSecond() - 1;
             return new DateTimeBound(startTime, endTime, value);
         }
         catch (DateTimeParseException ignored) {

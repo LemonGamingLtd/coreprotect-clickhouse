@@ -1,5 +1,6 @@
 package net.coreprotect.command;
 
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -50,6 +51,8 @@ public class LookupCommand {
         String ts = CommandParser.parseTimeString(args);
         long[] argTime = CommandParser.parseTime(args);
         long[] argDateTime = CommandParser.parseDateTime(args);
+        String timezoneInput = CommandParser.parseTimezoneString(args);
+        ZoneId argTimezone = CommandParser.parseZoneId(timezoneInput);
         long startTime = argTime[0];
         long endTime = argTime[1];
         int argWid = CommandParser.parseWorld(args, true, true);
@@ -126,6 +129,11 @@ public class LookupCommand {
         if (argWid == -1) {
             String worldName = CommandParser.parseWorldName(args, true);
             Chat.sendMessage(player, new ChatMessage(Phrase.build(Phrase.WORLD_NOT_FOUND, worldName)).build());
+            return;
+        }
+
+        if (!timezoneInput.isEmpty() && argTimezone == null) {
+            Chat.sendMessage(player, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.INVALID_TIMEZONE, timezoneInput));
             return;
         }
 
@@ -538,6 +546,7 @@ public class LookupCommand {
                     argAction = ConfigHandler.lookupAlist.get(player.getName());
                     argRadius = ConfigHandler.lookupRadius.get(player.getName());
                     ts = ConfigHandler.lookupTime.get(player.getName());
+                    argTimezone = ConfigHandler.lookupTimezone.get(player.getName());
                     startTime = 1;
                     endTime = 0;
                 }
@@ -620,7 +629,7 @@ public class LookupCommand {
                         }
                     }
 
-                    Runnable runnable = new StandardLookupThread(player, command, rollbackusers, argBlocks, argExclude, argExcludeUsers, getExemptLookupUsers(player, rollbackusers, argAction), argAction, argRadius, lo, x, y, z, wid, argWid, timeStart, timeEnd, argNoisy, argExcluded, argRestricted, pa, re, type, ts, count);
+                    Runnable runnable = new StandardLookupThread(player, command, rollbackusers, argBlocks, argExclude, argExcludeUsers, getExemptLookupUsers(player, rollbackusers, argAction), argAction, argRadius, lo, x, y, z, wid, argWid, timeStart, timeEnd, argNoisy, argExcluded, argRestricted, pa, re, type, ts, argTimezone, count);
                     Thread thread = new Thread(runnable);
                     thread.start();
                 }

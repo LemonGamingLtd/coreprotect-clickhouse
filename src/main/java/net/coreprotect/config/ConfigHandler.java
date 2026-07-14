@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -144,6 +145,7 @@ public class ConfigHandler extends Queue {
     public static Map<String, List<Integer>> lookupAlist = syncMap();
     public static Map<String, Integer[]> lookupRadius = syncMap();
     public static Map<String, String> lookupTime = syncMap();
+    public static Map<String, ZoneId> lookupTimezone = syncMap();
     public static Map<String, Long[]> lookupRows = syncMap();
     public static Map<String, String> uuidCache = syncMap();
     public static Map<String, String> uuidCacheReversed = syncMap();

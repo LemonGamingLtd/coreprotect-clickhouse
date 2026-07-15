@@ -355,7 +355,7 @@ public class CoreProtectAPI extends Queue {
         return true;
     }
 
-        /**
+    /**
      * Logs the removal of specific items from a container by a user.
      *
      * @param user

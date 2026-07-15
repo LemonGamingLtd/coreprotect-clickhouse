@@ -356,6 +356,37 @@ public class CoreProtectAPI extends Queue {
     }
 
     /**
+     * Logs the removal of specific items from a container by a user.
+     *
+     * @param user
+     *            The username credited with the removal
+     * @param location
+     *            The container location
+     * @param items
+     *            The items removed from the container
+     * @return True if the removal was logged
+     */
+    public boolean logContainerRemoval(String user, Location location, ItemStack... items) {
+        if (!isEnabled() || !isValidUserAndLocation(user, location) || items == null || items.length == 0) {
+            return false;
+        }
+
+        List<ItemStack> removed = new ArrayList<>();
+        for (ItemStack item : items) {
+            if (item != null && !item.getType().isAir() && item.getAmount() > 0) {
+                removed.add(item.clone());
+            }
+        }
+
+        if (removed.isEmpty()) {
+            return false;
+        }
+
+        queueContainerBreak(user, location.clone(), Material.CHEST, removed.toArray(new ItemStack[0]));
+        return true;
+    }
+
+    /**
      * Logs an entity kill/removal by a user.
      *
      * @param user

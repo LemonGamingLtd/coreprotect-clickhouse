@@ -276,6 +276,11 @@ public class ConfigHandler extends Queue {
             config.addDataSourceProperty("allowPublicKeyRetrieval", "true");
             config.addDataSourceProperty("useSSL", String.valueOf(Config.getGlobal().ENABLE_SSL));
 
+            if (Config.getGlobal().ASYNC_INSERT) {
+                config.addDataSourceProperty("clickhouse_setting_async_insert", "1");
+                config.addDataSourceProperty("clickhouse_setting_wait_for_async_insert", Config.getGlobal().ASYNC_INSERT_WAIT ? "1" : "0");
+            }
+
             ConfigHandler.hikariDataSource = new HikariDataSource(config);
         }
 

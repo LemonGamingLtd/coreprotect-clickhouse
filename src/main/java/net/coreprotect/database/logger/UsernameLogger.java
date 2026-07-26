@@ -3,14 +3,29 @@ package net.coreprotect.database.logger;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
+import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 
 public class UsernameLogger {
 
+    private static final Set<String> appliedUserUpdates = ConcurrentHashMap.newKeySet();
+
     private UsernameLogger() {
         throw new IllegalStateException("Database class");
+    }
+
+    private static String storedName(Connection connection, int rowid) throws SQLException {
+        try (PreparedStatement preparedStmt = connection.prepareStatement("SELECT user FROM " + ConfigHandler.prefix + "user WHERE rowid = ? LIMIT 1")) {
+            preparedStmt.setInt(1, rowid);
+            try (ResultSet rs = preparedStmt.executeQuery()) {
+                return rs.next() ? rs.getString("user") : null;
+            }
+        }
     }
 
     public static void log(Connection connection, String user, String uuid, int configUsernames, int time) {
@@ -31,21 +46,30 @@ public class UsernameLogger {
                 }
             }
 
-            boolean update = false;
+            boolean nameChanged = false;
             if (userRow == null) {
-                idRow = ConfigHandler.playerIdCache.get(user.toLowerCase(Locale.ROOT));
-                update = true;
+                Integer cachedId = ConfigHandler.playerIdCache.get(user.toLowerCase(Locale.ROOT));
+                if (cachedId == null) {
+                    return;
+                }
+
+                idRow = cachedId;
+                userRow = storedName(connection, idRow);
+                nameChanged = userRow != null && !user.equalsIgnoreCase(userRow);
             }
             else if (!user.equalsIgnoreCase(userRow)) {
-                update = true;
+                nameChanged = true;
             }
 
-            if (update) {
-                try (PreparedStatement preparedStmt = connection.prepareStatement("ALTER TABLE " + ConfigHandler.prefix + "user UPDATE user = ?, uuid = ? WHERE rowid = ?")) {
-                    preparedStmt.setString(1, user);
-                    preparedStmt.setString(2, uuid);
-                    preparedStmt.setInt(3, idRow);
-                    preparedStmt.executeUpdate();
+            boolean update = nameChanged;
+            if (nameChanged) {
+                if (Config.getGlobal().USERNAME_UPDATES && appliedUserUpdates.add(uuid + "." + user.toLowerCase(Locale.ROOT))) {
+                    try (PreparedStatement preparedStmt = connection.prepareStatement("ALTER TABLE " + ConfigHandler.prefix + "user UPDATE user = ?, uuid = ? WHERE rowid = ?")) {
+                        preparedStmt.setString(1, user);
+                        preparedStmt.setString(2, uuid);
+                        preparedStmt.setInt(3, idRow);
+                        preparedStmt.executeUpdate();
+                    }
                 }
 
                 /*

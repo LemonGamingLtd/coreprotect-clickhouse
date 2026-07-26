@@ -3,6 +3,7 @@ package net.coreprotect.database.statement;
 import java.sql.PreparedStatement;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.serialize.JsonSerialization;
 import net.coreprotect.utility.serialize.SerializedBlockMeta;
@@ -30,7 +31,7 @@ public class BlockStatement {
             preparedStmt.setLong(13, CoreProtect.getInstance().rowNumbers().nextRowNumber("block", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
-            if (batchCount > 0 && batchCount % 1000 == 0) {
+            if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
                 preparedStmt.executeBatch();
             }
         }

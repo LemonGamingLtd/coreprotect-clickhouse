@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import org.bukkit.block.BlockState;
 import org.bukkit.util.io.BukkitObjectInputStream;
 
@@ -27,7 +28,7 @@ public class EntityStatement {
         preparedStmt.setInt(3, rowid);
         preparedStmt.addBatch();
 
-        if (batchCount > 0 && batchCount % 1000 == 0) {
+        if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
             preparedStmt.executeBatch();
         }
 

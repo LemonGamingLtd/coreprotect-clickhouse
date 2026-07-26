@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 
@@ -26,7 +27,7 @@ public class SkullStatement {
         preparedStmt.setInt(4, rowid);
         preparedStmt.addBatch();
 
-        if (batchCount > 0 && batchCount % 1000 == 0) {
+        if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
             preparedStmt.executeBatch();
         }
 

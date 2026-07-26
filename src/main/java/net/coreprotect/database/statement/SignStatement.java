@@ -5,6 +5,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 
@@ -42,7 +43,7 @@ public class SignStatement {
             preparedStmt.setInt(21, CoreProtect.getInstance().rowNumbers().nextRowId("sign", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
-            if (batchCount > 0 && batchCount % 1000 == 0) {
+            if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
                 preparedStmt.executeBatch();
             }
         }

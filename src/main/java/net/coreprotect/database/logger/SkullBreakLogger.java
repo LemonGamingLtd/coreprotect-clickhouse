@@ -29,7 +29,7 @@ public class SkullBreakLogger {
             if (skull.hasOwner()) {
                 String skullOwner = PaperAdapter.ADAPTER.getSkullOwner(skull);
                 String skullSkin = PaperAdapter.ADAPTER.getSkullSkin(skull);
-                skullKey = SkullStatement.insert(preparedStmt2, time, skullOwner, skullSkin);
+                skullKey = SkullStatement.insert(preparedStmt2, batchCount, time, skullOwner, skullSkin);
             }
 
             BlockBreakLogger.log(preparedStmt, batchCount, user, block.getLocation(), type, skullKey, null, block.getBlockData().getAsString(), null);

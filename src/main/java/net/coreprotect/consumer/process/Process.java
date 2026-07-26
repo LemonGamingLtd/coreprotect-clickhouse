@@ -7,9 +7,11 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.Material;
 
+import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Consumer;
@@ -49,6 +51,11 @@ public class Process {
 
     public static int lastLockUpdate = 0;
     private static volatile int currentConsumerSize = 0;
+
+    private static final int BATCH_FAILURE_LOG_INTERVAL = 60;
+    private static final AtomicInteger batchFailureCount = new AtomicInteger();
+    private static volatile String lastBatchFailure = null;
+    private static volatile int lastBatchFailureTime = 0;
 
     public static int getCurrentConsumerSize() {
         return currentConsumerSize;
@@ -259,7 +266,7 @@ public class Process {
                             }
                         }
                         catch (Exception e) {
-                            e.printStackTrace();
+                            logBatchFailure(e);
                         }
                     }
                 }
@@ -300,25 +307,69 @@ public class Process {
     }
 
     private static void commit(Statement statement, PreparedStatement preparedStmtSigns, PreparedStatement preparedStmtBlocks, PreparedStatement preparedStmtSkulls, PreparedStatement preparedStmtContainers, PreparedStatement preparedStmtItems, PreparedStatement preparedStmtWorlds, PreparedStatement preparedStmtChat, PreparedStatement preparedStmtCommand, PreparedStatement preparedStmtSession, PreparedStatement preparedStmtEntities, PreparedStatement preparedStmtMaterials, PreparedStatement preparedStmtArt, PreparedStatement preparedStmtEntity, PreparedStatement preparedStmtBlockdata) {
+        executeBatch(preparedStmtSigns);
+        executeBatch(preparedStmtBlocks);
+        executeBatch(preparedStmtSkulls);
+        executeBatch(preparedStmtContainers);
+        executeBatch(preparedStmtItems);
+        executeBatch(preparedStmtWorlds);
+        executeBatch(preparedStmtChat);
+        executeBatch(preparedStmtCommand);
+        executeBatch(preparedStmtSession);
+        executeBatch(preparedStmtEntities);
+        executeBatch(preparedStmtMaterials);
+        executeBatch(preparedStmtArt);
+        executeBatch(preparedStmtEntity);
+        executeBatch(preparedStmtBlockdata);
+
         try {
-            preparedStmtSigns.executeBatch();
-            preparedStmtBlocks.executeBatch();
-            preparedStmtSkulls.executeBatch();
-            preparedStmtContainers.executeBatch();
-            preparedStmtItems.executeBatch();
-            preparedStmtWorlds.executeBatch();
-            preparedStmtChat.executeBatch();
-            preparedStmtCommand.executeBatch();
-            preparedStmtSession.executeBatch();
-            preparedStmtEntities.executeBatch();
-            preparedStmtMaterials.executeBatch();
-            preparedStmtArt.executeBatch();
-            preparedStmtEntity.executeBatch();
-            preparedStmtBlockdata.executeBatch();
             Database.commitTransaction(statement, Config.getGlobal().MYSQL);
         }
         catch (Exception e) {
+            logBatchFailure(e);
+        }
+    }
+
+    private static void executeBatch(PreparedStatement preparedStmt) {
+        try {
+            preparedStmt.executeBatch();
+        }
+        catch (Exception e) {
+            logBatchFailure(e);
+
+            try {
+                preparedStmt.clearBatch();
+            }
+            catch (Exception ignored) {
+                // statement is unusable, nothing further to do
+            }
+        }
+    }
+
+    static void logBatchFailure(Exception e) {
+        String key = e.getClass().getName() + ": " + e.getMessage();
+        int now = (int) (System.currentTimeMillis() / 1000L);
+        int suppressed = batchFailureCount.getAndIncrement();
+
+        if (key.equals(lastBatchFailure) && now - lastBatchFailureTime < BATCH_FAILURE_LOG_INTERVAL) {
+            return;
+        }
+
+        lastBatchFailure = key;
+        lastBatchFailureTime = now;
+        batchFailureCount.set(0);
+
+        CoreProtect plugin = CoreProtect.getInstance();
+        if (plugin == null) {
             e.printStackTrace();
+            return;
+        }
+
+        if (suppressed > 0) {
+            plugin.getSLF4JLogger().warn("Database write failed ({} identical errors suppressed)", suppressed, e);
+        }
+        else {
+            plugin.getSLF4JLogger().warn("Database write failed", e);
         }
     }
 }

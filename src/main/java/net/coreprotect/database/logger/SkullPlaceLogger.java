@@ -31,7 +31,7 @@ public class SkullPlaceLogger {
                 if (skull.hasOwner()) {
                     String skullOwner = PaperAdapter.ADAPTER.getSkullOwner(skull);
                     String skullSkin = PaperAdapter.ADAPTER.getSkullSkin(skull);
-                    skullKey = SkullStatement.insert(preparedStmt2, time, skullOwner, skullSkin);
+                    skullKey = SkullStatement.insert(preparedStmt2, batchCount, time, skullOwner, skullSkin);
                 }
             }
 

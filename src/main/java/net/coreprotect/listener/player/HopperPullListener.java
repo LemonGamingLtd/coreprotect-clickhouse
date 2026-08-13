@@ -28,6 +28,12 @@ public final class HopperPullListener {
     private static final AtomicInteger activeProcessors = new AtomicInteger(0);
 
     static void processHopperPull(Location location, String user, InventoryHolder sourceHolder, InventoryHolder destinationHolder, ItemStack item) {
+        Location destinationLocation = destinationHolder.getInventory().getLocation();
+        boolean blacklisted = ConfigHandler.isBlacklisted(user) || ConfigHandler.isFilterBlacklisted(user, item.getType().getKey().toString());
+        if (blacklisted && !hasPendingContainerTransaction(location) && !hasPendingContainerTransaction(destinationLocation)) {
+            return;
+        }
+
         String loggingChestId = "#hopper-pull." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ();
         Object[] lastAbort = ConfigHandler.hopperAbort.get(loggingChestId);
         if (lastAbort != null) {
@@ -47,6 +53,15 @@ public final class HopperPullListener {
         if (processorRunning.compareAndSet(false, true)) {
             startHopperProcessor();
         }
+    }
+
+    private static boolean hasPendingContainerTransaction(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+
+        String transactionId = location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ();
+        return ConfigHandler.transactingChest.containsKey(transactionId);
     }
 
     private static void startHopperProcessor() {

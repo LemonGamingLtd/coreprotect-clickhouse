@@ -34,6 +34,11 @@ public final class HopperPushListener {
             return;
         }
 
+        boolean blacklisted = ConfigHandler.isBlacklisted(user) || ConfigHandler.isFilterBlacklisted(user, item.getType().getKey().toString());
+        if (blacklisted && !hasPendingContainerTransaction(location) && !hasPendingContainerTransaction(destinationLocation)) {
+            return;
+        }
+
         String loggingChestId = "#hopper-push." + destinationLocation.getBlockX() + "." + destinationLocation.getBlockY() + "." + destinationLocation.getBlockZ();
         Object[] lastAbort = ConfigHandler.hopperAbort.get(loggingChestId);
         if (lastAbort != null) {
@@ -52,6 +57,15 @@ public final class HopperPushListener {
         if (processorRunning.compareAndSet(false, true)) {
             startHopperProcessor();
         }
+    }
+
+    private static boolean hasPendingContainerTransaction(Location location) {
+        if (location == null || location.getWorld() == null) {
+            return false;
+        }
+
+        String transactionId = location.getWorld().getUID().toString() + "." + location.getBlockX() + "." + location.getBlockY() + "." + location.getBlockZ();
+        return ConfigHandler.transactingChest.containsKey(transactionId);
     }
 
     private static void startHopperProcessor() {

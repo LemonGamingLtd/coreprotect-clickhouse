@@ -7,6 +7,7 @@ import net.coreprotect.config.Config;
 import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.serialize.JsonSerialization;
 import net.coreprotect.utility.serialize.SerializedBlockMeta;
+import net.coreprotect.utility.ErrorReporter;
 
 public class BlockStatement {
 
@@ -14,7 +15,7 @@ public class BlockStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, int data, SerializedBlockMeta meta, String blockData, int action, int rolledBack) {
+    public static void insert(PreparedStatement preparedStmt, int batchCount, int time, int id, int wid, int x, int y, int z, int type, long data, SerializedBlockMeta meta, String blockData, int action, int rolledBack) {
         try {
             preparedStmt.setInt(1, time);
             preparedStmt.setInt(2, id);
@@ -23,7 +24,7 @@ public class BlockStatement {
             preparedStmt.setInt(5, y);
             preparedStmt.setInt(6, z);
             preparedStmt.setInt(7, type);
-            preparedStmt.setInt(8, data);
+            preparedStmt.setLong(8, data);
             preparedStmt.setString(9, meta != null ? JsonSerialization.GSON.toJson(meta) : null);
             preparedStmt.setString(10, BlockUtils.stringToStringData(blockData, type));
             preparedStmt.setInt(11, action);
@@ -36,7 +37,7 @@ public class BlockStatement {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 }

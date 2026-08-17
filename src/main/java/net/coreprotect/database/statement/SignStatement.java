@@ -11,6 +11,7 @@ import org.bukkit.block.Sign;
 
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.utility.BlockUtils;
+import net.coreprotect.utility.ErrorReporter;
 
 public class SignStatement {
 
@@ -40,7 +41,7 @@ public class SignStatement {
             preparedStmt.setString(18, line6);
             preparedStmt.setString(19, line7);
             preparedStmt.setString(20, line8);
-            preparedStmt.setInt(21, CoreProtect.getInstance().rowNumbers().nextRowId("sign", preparedStmt.getConnection()));
+            preparedStmt.setLong(21, CoreProtect.getInstance().rowNumbers().nextRowNumber("sign", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -48,7 +49,7 @@ public class SignStatement {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -101,7 +102,7 @@ public class SignStatement {
             resultSet.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 }

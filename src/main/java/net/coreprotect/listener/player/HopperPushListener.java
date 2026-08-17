@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.Location;
+import org.bukkit.Tag;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -18,6 +19,7 @@ import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.thread.Scheduler;
 import net.coreprotect.utility.ItemUtils;
+import net.coreprotect.utility.ErrorReporter;
 
 public final class HopperPushListener {
 
@@ -78,7 +80,7 @@ public final class HopperPushListener {
                     }
                 }
                 catch (Exception e) {
-                    e.printStackTrace();
+                    ErrorReporter.report(e);
                 }
                 finally {
                     activeProcessors.decrementAndGet();
@@ -154,7 +156,8 @@ public final class HopperPushListener {
             list.add(movedItem);
         }
 
-        if (Config.getConfig(location.getWorld()).HOPPER_FILTER_META && !movedItem.hasItemMeta()) {
+        final Config config = Config.getConfig(location.getWorld());
+        if ((config.HOPPER_FILTER_META && !movedItem.hasItemMeta()) || (config.DISABLE_HOPPER_CARPET_LOGGING && Tag.WOOL_CARPETS.isTagged(movedItem.getType()))) {
             return;
         }
 

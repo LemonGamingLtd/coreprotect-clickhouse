@@ -14,6 +14,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.util.io.BukkitObjectInputStream;
 
 import net.coreprotect.config.ConfigHandler;
+import net.coreprotect.utility.ErrorReporter;
 
 public class EntityStatement {
 
@@ -21,11 +22,11 @@ public class EntityStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static int insert(PreparedStatement preparedStmt, int batchCount, int time, String entityData) throws SQLException {
-        final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("entity", preparedStmt.getConnection());
+    public static long insert(PreparedStatement preparedStmt, int batchCount, int time, String entityData) throws SQLException {
+        final long rowid = CoreProtect.getInstance().rowNumbers().nextRowNumber("entity", preparedStmt.getConnection());
         preparedStmt.setInt(1, time);
         preparedStmt.setString(2, entityData);
-        preparedStmt.setInt(3, rowid);
+        preparedStmt.setLong(3, rowid);
         preparedStmt.addBatch();
 
         if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -54,10 +55,8 @@ public class EntityStatement {
 
             resultSet.close();
         }
-        catch (Exception e) { // only display exception on development branch
-            if (ConfigHandler.EDITION_BRANCH.contains("-dev")) {
-                e.printStackTrace();
-            }
+        catch (Exception e) { // only print exception on development branch
+            ErrorReporter.report(e, ConfigHandler.EDITION_BRANCH.contains("-dev"));
         }
 
         return result;

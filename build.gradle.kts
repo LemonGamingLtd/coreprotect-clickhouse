@@ -73,7 +73,7 @@ configurations.all {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    sourceCompatibility = JavaVersion.VERSION_25
 }
 
 tasks {

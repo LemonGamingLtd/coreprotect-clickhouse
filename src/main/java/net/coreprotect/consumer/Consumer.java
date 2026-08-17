@@ -15,6 +15,7 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.process.Process;
+import net.coreprotect.utility.ErrorReporter;
 import net.coreprotect.thread.Scheduler;
 
 public class Consumer extends Process implements Runnable, Thread.UncaughtExceptionHandler {
@@ -53,7 +54,7 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
             Thread.sleep(30000); // 30 seconds
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -116,7 +117,7 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
         pausedSuccess = false;
     }
@@ -142,8 +143,8 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
                 pauseConsumer(process_id);
                 Process.processConsumer(process_id, lastRun);
             }
-            catch (Throwable e) {
-                e.printStackTrace();
+            catch (Exception e) {
+                ErrorReporter.report(e);
                 errorDelay();
             }
         }
@@ -151,7 +152,7 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
 
     @Override
     public void uncaughtException(Thread thread, Throwable e) {
-        e.printStackTrace();
+        ErrorReporter.report(e);
 
         CoreProtect plugin = CoreProtect.getInstance();
         if (plugin == null || !plugin.isEnabled()) {

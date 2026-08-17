@@ -20,6 +20,7 @@ import org.bukkit.World;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.language.Language;
 import net.coreprotect.thread.Scheduler;
+import net.coreprotect.utility.VersionUtils;
 
 public class Config extends Language {
 
@@ -41,6 +42,7 @@ public class Config extends Language {
     public String MYSQL_PASSWORD;
     public String PARTITIONING;
     public boolean SELECT_USE_FINAL;
+    public boolean DISABLE_HOPPER_CARPET_LOGGING;
     /* Initialized here as well as on load; the consumer divides by BATCH_SIZE, so it must never be 0. */
     public int CONSUMER_INTERVAL = 3000;
     public int BATCH_SIZE = 25000;
@@ -48,6 +50,8 @@ public class Config extends Language {
     public boolean ASYNC_INSERT_WAIT = true;
     public boolean USERNAME_UPDATES = true;
     public String LANGUAGE;
+    public String AUTO_PURGE;
+    public String AUTO_PURGE_TIME;
     public boolean ENABLE_SSL;
     public boolean DISABLE_WAL;
     public boolean HOVER_EVENTS;
@@ -59,6 +63,7 @@ public class Config extends Language {
     public boolean NETWORK_DEBUG;
     public boolean MYSQL;
     public boolean CHECK_UPDATES;
+    public boolean ERROR_REPORTING;
     public boolean API_ENABLED;
     public boolean VERBOSE;
     public boolean ROLLBACK_ITEMS;
@@ -120,7 +125,9 @@ public class Config extends Language {
         DEFAULT_VALUES.put("clickhouse-username-updates", "true");
         DEFAULT_VALUES.put("database-lock", "false");
         DEFAULT_VALUES.put("language", "en");
+        DEFAULT_VALUES.put("auto-purge", "false");
         DEFAULT_VALUES.put("check-updates", "true");
+        DEFAULT_VALUES.put("error-reporting", "true");
         DEFAULT_VALUES.put("api-enabled", "true");
         DEFAULT_VALUES.put("verbose", "true");
         DEFAULT_VALUES.put("default-radius", "10");
@@ -172,7 +179,9 @@ public class Config extends Language {
         HEADERS.put("clickhouse-username-updates", new String[] { "# Whether to rewrite the stored username when a player is seen under a new name.", "# Each rewrite is a ClickHouse mutation, which competes with the background merges that keep the", "# part count down, so this is disabled by default. While disabled, a renamed player keeps being", "# recorded under the name already stored for them, and lookups must use that older name." });
         HEADERS.put("database-lock", new String[] { "# Whether to utilize database locking, preventing two servers from accidentally using the same database.", "# This functionality does not work well with ClickHouse due to it causing a large amount of mutations." });
         HEADERS.put("language", new String[] { "# If modified, will automatically attempt to translate languages phrases.", "# List of language codes: https://coreprotect.net/languages/" });
+        HEADERS.put("auto-purge", new String[] { "# Automatically purge data older than the configured time.", "# Examples: 30d, 12w, 6mo. Set to false to disable." });
         HEADERS.put("check-updates", new String[] { "# If enabled, CoreProtect will check for updates when your server starts up.", "# If an update is available, you'll be notified via your server console.", });
+        HEADERS.put("error-reporting", new String[] { "# Automatically sends errors to the plugin author." });
         HEADERS.put("api-enabled", new String[] { "# If enabled, other plugins will be able to utilize the CoreProtect API.", });
         HEADERS.put("verbose", new String[] { "# If enabled, extra data is displayed during rollbacks and restores.", "# Can be manually triggered by adding \"#verbose\" to your rollback command." });
         HEADERS.put("default-radius", new String[] { "# If no radius is specified in a rollback or restore, this value will be", "# used as the radius. Set to \"0\" to disable automatically adding a radius." });
@@ -236,13 +245,17 @@ public class Config extends Language {
         this.MYSQL_PASSWORD = this.getString("mysql-password");
         this.PARTITIONING = this.getString("clickhouse-partitioning");
         this.SELECT_USE_FINAL = this.getBoolean("clickhouse-select-use-final", false);
+        this.DISABLE_HOPPER_CARPET_LOGGING = this.getBoolean("clickhouse-disable-hopper-carpet-logging", false);
         this.CONSUMER_INTERVAL = Math.max(250, this.getInt("clickhouse-consumer-interval"));
         this.BATCH_SIZE = Math.max(1000, this.getInt("clickhouse-batch-size"));
         this.ASYNC_INSERT = this.getBoolean("clickhouse-async-insert", false);
         this.ASYNC_INSERT_WAIT = this.getBoolean("clickhouse-async-insert-wait", true);
         this.USERNAME_UPDATES = this.getBoolean("clickhouse-username-updates", true);
         this.LANGUAGE = this.getString("language");
+        this.AUTO_PURGE = this.getString("auto-purge");
+        this.AUTO_PURGE_TIME = this.getString("auto-purge-time");
         this.CHECK_UPDATES = this.getBoolean("check-updates");
+        this.ERROR_REPORTING = this.getBoolean("error-reporting");
         this.API_ENABLED = this.getBoolean("api-enabled");
         this.VERBOSE = this.getBoolean("verbose");
         this.DEFAULT_RADIUS = this.getInt("default-radius");
@@ -495,6 +508,9 @@ public class Config extends Language {
                 final String configuredValue = this.config.get(key);
 
                 if (configuredValue != null) {
+                    continue;
+                }
+                if (key.equals("auto-purge") && VersionUtils.isCommunityEdition()) {
                     continue;
                 }
 

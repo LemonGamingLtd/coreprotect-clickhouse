@@ -6,6 +6,7 @@ import net.coreprotect.config.Config;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import net.coreprotect.utility.ErrorReporter;
 
 public class MaterialStatement {
 
@@ -17,7 +18,7 @@ public class MaterialStatement {
         try {
             preparedStmt.setInt(1, id);
             preparedStmt.setString(2, name);
-            preparedStmt.setInt(3, CoreProtect.getInstance().rowNumbers().nextRowId(tableName, preparedStmt.getConnection()));
+            preparedStmt.setLong(3, CoreProtect.getInstance().rowNumbers().nextRowNumber(tableName, preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -25,7 +26,7 @@ public class MaterialStatement {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -40,7 +41,7 @@ public class MaterialStatement {
             resultSet.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return result;

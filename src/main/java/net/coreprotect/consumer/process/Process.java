@@ -340,8 +340,8 @@ public class Process {
             try {
                 preparedStmt.clearBatch();
             }
-            catch (Exception e) {
-                ErrorReporter.report(e);
+            catch (Exception batchError) {
+                ErrorReporter.report(batchError);
             }
         }
     }

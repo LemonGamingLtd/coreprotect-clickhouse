@@ -1,7 +1,7 @@
 plugins {
     `java-library`
     `maven-publish`
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.19"
+    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
     id("com.gradleup.shadow") version "9.3.0"
     id("xyz.jpenilla.run-paper") version "3.0.2"
     id("com.gorylenko.gradle-git-properties") version "2.5.2"
@@ -43,13 +43,7 @@ publishing {
 }
 
 dependencies {
-    paperweight.paperDevBundle("${libs.versions.minecraft.get()}-R0.1-SNAPSHOT")
-
-    // the minimal version we target with userdev may be different from the maximum supported api version
-    val paperVersion = libs.versions.paper.get()
-    if (paperVersion != libs.versions.minecraft.get()) {
-        compileOnly("io.papermc.paper:paper-api:${paperVersion}-R0.1-SNAPSHOT")
-    }
+    paperweight.paperDevBundle(libs.versions.paper.dev.bundle.get())
 
     implementation(libs.hikaricp) {
         exclude(group = "org.slf4j")
@@ -79,7 +73,7 @@ configurations.all {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_21
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
 }
 
 tasks {
@@ -114,17 +108,19 @@ tasks {
 
     compileJava {
         options.encoding = Charsets.UTF_8.name()
-        options.release.set(21)
+        options.release.set(25)
     }
 
     processResources {
         filteringCharset = Charsets.UTF_8.name()
 
-        expand(
-            "version" to project.version,
+        val props = mapOf(
+            "version" to project.version.toString(),
             "branch" to "development",
             "api_version" to libs.versions.minecraft.get()
         )
+        inputs.properties(props)
+        expand(props)
     }
 
     test {
@@ -136,7 +132,7 @@ tasks.withType(xyz.jpenilla.runtask.task.AbstractRun::class) {
     javaLauncher = javaToolchains.launcherFor {
         @Suppress("UnstableApiUsage")
         vendor = JvmVendorSpec.JETBRAINS
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion = JavaLanguageVersion.of(25)
     }
     jvmArgs("-XX:+AllowEnhancedClassRedefinition")
 }

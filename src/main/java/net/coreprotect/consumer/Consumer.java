@@ -12,8 +12,10 @@ import org.bukkit.block.BlockState;
 import org.bukkit.inventory.ItemStack;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.process.Process;
+import net.coreprotect.thread.Scheduler;
 
 public class Consumer extends Process implements Runnable, Thread.UncaughtExceptionHandler {
 
@@ -98,6 +100,14 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
         return consumerThread != null && consumerThread.isAlive();
     }
 
+    /**
+     * Checks whether the calling thread is the consumer thread. Used to avoid waiting on the
+     * consumer from within the consumer itself, which could never complete.
+     */
+    public static boolean isConsumerThread() {
+        return Thread.currentThread() == consumerThread;
+    }
+
     private static void pauseConsumer(int process_id) {
         try {
             while ((ConfigHandler.serverRunning || ConfigHandler.converterRunning || ConfigHandler.migrationRunning) && (Consumer.isPaused || ConfigHandler.pauseConsumer || ConfigHandler.purgeRunning || Consumer.consumer_id.get(process_id)[1] == 1)) {
@@ -128,11 +138,11 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
                     process_id = 1;
                     currentConsumer = 0;
                 }
-                Thread.sleep(500);
+                Thread.sleep(lastRun ? 500 : Config.getGlobal().CONSUMER_INTERVAL);
                 pauseConsumer(process_id);
                 Process.processConsumer(process_id, lastRun);
             }
-            catch (Exception e) {
+            catch (Throwable e) {
                 e.printStackTrace();
                 errorDelay();
             }
@@ -142,7 +152,18 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
     @Override
     public void uncaughtException(Thread thread, Throwable e) {
         e.printStackTrace();
-        Bukkit.getPluginManager().disablePlugin(CoreProtect.getInstance());
+
+        CoreProtect plugin = CoreProtect.getInstance();
+        if (plugin == null || !plugin.isEnabled()) {
+            return;
+        }
+
+        try {
+            Scheduler.runTask(plugin, () -> Bukkit.getPluginManager().disablePlugin(plugin));
+        }
+        catch (Exception scheduleFailure) {
+            scheduleFailure.printStackTrace();
+        }
     }
 
     public static void startConsumer() {

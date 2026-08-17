@@ -18,15 +18,27 @@ public class UserStatement {
     }
 
     public static int insert(Connection connection, String user) {
-        int id = -1;
+        return insert(connection, user, null);
+    }
 
-        try (PreparedStatement preparedStmt = connection.prepareStatement("INSERT INTO " + ConfigHandler.prefix + "user (time, user, rowid) VALUES (?, ?, ?)")) {
+    public static int insert(Connection connection, String user, String uuid) {
+        int id = -1;
+        boolean hasUuid = uuid != null && !uuid.isEmpty();
+        String query = hasUuid
+            ? "INSERT INTO " + ConfigHandler.prefix + "user (time, user, uuid, rowid) VALUES (?, ?, ?, ?)"
+            : "INSERT INTO " + ConfigHandler.prefix + "user (time, user, rowid) VALUES (?, ?, ?)";
+
+        try (PreparedStatement preparedStmt = connection.prepareStatement(query)) {
             int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
             id = CoreProtect.getInstance().rowNumbers().nextRowId("user", connection);
 
-            preparedStmt.setInt(1, unixtimestamp);
-            preparedStmt.setString(2, user);
-            preparedStmt.setInt(3, id);
+            int index = 1;
+            preparedStmt.setInt(index++, unixtimestamp);
+            preparedStmt.setString(index++, user);
+            if (hasUuid) {
+                preparedStmt.setString(index++, uuid);
+            }
+            preparedStmt.setInt(index, id);
 
             preparedStmt.execute();
         }
@@ -79,7 +91,7 @@ public class UserStatement {
             }
 
             if (id == -1) {
-                id = insert(connection, user);
+                id = insert(connection, user, uuid);
             }
 
             ConfigHandler.playerIdCache.put(user.toLowerCase(Locale.ROOT), id);

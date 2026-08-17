@@ -1,6 +1,7 @@
 package net.coreprotect.database.statement;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,7 +20,7 @@ public class MaterialStatement {
             preparedStmt.setInt(3, CoreProtect.getInstance().rowNumbers().nextRowId(tableName, preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
-            if (batchCount > 0 && batchCount % 1000 == 0) {
+            if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
                 preparedStmt.executeBatch();
             }
         }

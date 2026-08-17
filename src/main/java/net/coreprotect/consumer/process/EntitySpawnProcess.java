@@ -37,7 +37,7 @@ class EntitySpawnProcess {
                     try {
                         final Entity deserialized = EntityUtils.deserializeEntity(rs.getString("data"), block.getWorld());
                         Scheduler.runTask(CoreProtect.getInstance(), () -> block.getWorld().addEntity(deserialized), block.getLocation());
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         CoreProtect.getInstance().getSLF4JLogger().warn("Failed to spawn entity", e);
                     }
                 }

@@ -9,6 +9,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -144,6 +145,7 @@ public class ConfigHandler extends Queue {
     public static Map<String, List<Integer>> lookupAlist = syncMap();
     public static Map<String, Integer[]> lookupRadius = syncMap();
     public static Map<String, String> lookupTime = syncMap();
+    public static Map<String, ZoneId> lookupTimezone = syncMap();
     public static Map<String, Long[]> lookupRows = syncMap();
     public static Map<String, String> uuidCache = syncMap();
     public static Map<String, String> uuidCacheReversed = syncMap();
@@ -273,6 +275,11 @@ public class ConfigHandler extends Queue {
             /* Disable SSL to suppress the unverified server identity warning */
             config.addDataSourceProperty("allowPublicKeyRetrieval", "true");
             config.addDataSourceProperty("useSSL", String.valueOf(Config.getGlobal().ENABLE_SSL));
+
+            if (Config.getGlobal().ASYNC_INSERT) {
+                config.addDataSourceProperty("clickhouse_setting_async_insert", "1");
+                config.addDataSourceProperty("clickhouse_setting_wait_for_async_insert", Config.getGlobal().ASYNC_INSERT_WAIT ? "1" : "0");
+            }
 
             ConfigHandler.hikariDataSource = new HikariDataSource(config);
         }

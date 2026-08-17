@@ -3,6 +3,7 @@ package net.coreprotect.database.statement;
 import java.sql.PreparedStatement;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import net.coreprotect.utility.ItemUtils;
 import org.bukkit.inventory.ItemStack;
 
@@ -28,7 +29,7 @@ public class ItemStatement {
             preparedStmt.setInt(12, CoreProtect.getInstance().rowNumbers().nextRowId("item", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
-            if (batchCount > 0 && batchCount % 1000 == 0) {
+            if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
                 preparedStmt.executeBatch();
             }
         }

@@ -5,12 +5,14 @@ import net.coreprotect.language.Selector;
 
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
 public class ChatUtils {
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.##", new DecimalFormatSymbols(Locale.ROOT));
+    private static final DateTimeFormatter TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss z", Locale.ROOT);
 
     private ChatUtils() {
         throw new IllegalStateException("Utility class");
@@ -154,6 +156,10 @@ public class ChatUtils {
     }
 
     public static String getTimeSince(long resultTime, long currentTime, boolean component) {
+        return getTimeSince(resultTime, currentTime, component, null);
+    }
+
+    public static String getTimeSince(long resultTime, long currentTime, boolean component, ZoneId timezone) {
         StringBuilder message = new StringBuilder();
         double timeSince = currentTime - (resultTime + 0.00);
         if (timeSince < 0.00) {
@@ -183,8 +189,8 @@ public class ChatUtils {
         }
 
         if (component) {
-            Date logDate = new Date(resultTime * 1000L);
-            String formattedTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss z").format(logDate);
+            ZoneId zone = timezone != null ? timezone : ZoneId.systemDefault();
+            String formattedTimestamp = TIMESTAMP_FORMAT.withZone(zone).format(Instant.ofEpochSecond(resultTime));
 
             return "<hover:show_text:'<gray>" + formattedTimestamp + "'><gray>" + message + "</hover>";
         }

@@ -129,6 +129,7 @@ public class Language {
         phrases.put(Phrase.INVALID_PARAMETER, "\"{0}\" is not a supported parameter.");
         phrases.put(Phrase.INVALID_RADIUS, "Please enter a valid radius.");
         phrases.put(Phrase.INVALID_SELECTION, "{0} selection not found.");
+        phrases.put(Phrase.INVALID_TIMEZONE, "\"{0}\" is an invalid timezone.");
         phrases.put(Phrase.INVALID_USERNAME, "\"{0}\" is an invalid username.");
         phrases.put(Phrase.INVALID_WORLD, "Please specify a valid world.");
         phrases.put(Phrase.LATEST_VERSION, "Latest Version: {0}");

@@ -6,6 +6,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 
 import net.coreprotect.CoreProtect;
+import net.coreprotect.config.Config;
 import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 
@@ -17,14 +18,18 @@ public class SkullStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static int insert(PreparedStatement preparedStmt, int time, String owner, String skin) throws SQLException {
+    public static int insert(PreparedStatement preparedStmt, int batchCount, int time, String owner, String skin) throws SQLException {
         final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("skull", preparedStmt.getConnection());
 
         preparedStmt.setInt(1, time);
         preparedStmt.setString(2, owner);
         preparedStmt.setString(3, skin);
         preparedStmt.setInt(4, rowid);
-        preparedStmt.execute();
+        preparedStmt.addBatch();
+
+        if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
+            preparedStmt.executeBatch();
+        }
 
         return rowid;
     }

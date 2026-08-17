@@ -30,6 +30,15 @@ public final class BlockPreDispenseListener extends Queue implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockPreDispense(BlockPreDispenseEvent event) {
         Block block = event.getBlock();
+        if (!useForDroppers && block.getType() == Material.DROPPER) {
+            useForDroppers = true;
+        }
+
+        String user = "#dispenser";
+        if (ConfigHandler.isBlacklisted(user) && !hasPendingContainerTransaction(block)) {
+            return;
+        }
+
         World world = block.getWorld();
         Config config = Config.getConfig(world);
         if (!config.BLOCK_PLACE) {
@@ -38,10 +47,6 @@ public final class BlockPreDispenseListener extends Queue implements Listener {
 
         BlockData blockData = block.getBlockData();
         if (blockData instanceof Dispenser) {
-            if (!useForDroppers && block.getType() == Material.DROPPER) {
-                useForDroppers = true;
-            }
-
             // Safeguard against null items
             ItemStack item = event.getItemStack();
             if (item == null) {
@@ -83,9 +88,13 @@ public final class BlockPreDispenseListener extends Queue implements Listener {
             }
 
             // Process the inventory transaction
-            String user = "#dispenser";
             ItemStack[] inventory = ((InventoryHolder) block.getState()).getInventory().getStorageContents();
             InventoryChangeListener.inventoryTransaction(user, block.getLocation(), inventory);
         }
+    }
+
+    private static boolean hasPendingContainerTransaction(Block block) {
+        String transactionId = block.getWorld().getUID().toString() + "." + block.getX() + "." + block.getY() + "." + block.getZ();
+        return ConfigHandler.transactingChest.containsKey(transactionId);
     }
 }

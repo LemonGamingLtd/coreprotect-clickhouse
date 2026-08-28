@@ -25,6 +25,7 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
     public static volatile boolean isPaused = false;
     public static volatile boolean transacting = false;
     public static volatile boolean interrupt = false;
+    private static volatile boolean shutdownAbortRequested = false;
     protected static volatile boolean pausedSuccess = false;
 
     public static ConcurrentHashMap<Integer, ArrayList<Object[]>> consumer = new ConcurrentHashMap<>(4, 0.75f, 2);
@@ -109,6 +110,14 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
         return Thread.currentThread() == consumerThread;
     }
 
+    public static boolean isShutdownAbortRequested() {
+        return shutdownAbortRequested;
+    }
+
+    public static void requestShutdownAbort() {
+        shutdownAbortRequested = true;
+    }
+
     private static void pauseConsumer(int process_id) {
         try {
             while ((ConfigHandler.serverRunning || ConfigHandler.converterRunning || ConfigHandler.migrationRunning) && (Consumer.isPaused || ConfigHandler.pauseConsumer || ConfigHandler.purgeRunning || Consumer.consumer_id.get(process_id)[1] == 1)) {
@@ -169,6 +178,7 @@ public class Consumer extends Process implements Runnable, Thread.UncaughtExcept
 
     public static void startConsumer() {
         if (!isRunning()) {
+            shutdownAbortRequested = false;
             consumerThread = new Thread(new Consumer());
             consumerThread.setName("CoreProtect Consumer Thread");
             consumerThread.setUncaughtExceptionHandler(new Consumer());

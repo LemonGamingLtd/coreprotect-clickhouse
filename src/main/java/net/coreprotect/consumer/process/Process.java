@@ -143,6 +143,10 @@ public class Process {
             // Scan through consumer data
             Database.beginTransaction(statement, Config.getGlobal().MYSQL);
             for (int i = 0; i < consumerDataSize; i++) {
+                if (Consumer.isShutdownAbortRequested()) {
+                    break;
+                }
+
                 Object[] data = consumerData.get(i);
                 if (data != null) {
                     int id = (int) data[0];
@@ -295,6 +299,7 @@ public class Process {
             users.clear();
             consumerObject.clear();
             consumerData.clear();
+            currentConsumerSize = 0;
         }
         catch (Exception e) {
             e.printStackTrace();

@@ -8,6 +8,7 @@ import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 
+import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Consumer;
 import net.coreprotect.consumer.process.Process;
@@ -23,7 +24,7 @@ import net.coreprotect.utility.Teleport;
 public class ShutdownService {
 
     private static final long ALERT_INTERVAL_MS = 30 * 1000; // 30 seconds
-    private static final long MAX_SHUTDOWN_WAIT_MS = 15 * 60 * 1000; // 15 minutes
+    private static final long MAX_CONVERSION_SHUTDOWN_WAIT_MS = 15 * 60 * 1000; // 15 minutes
     private static final long DB_UNREACHABLE_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
     private ShutdownService() {
@@ -86,6 +87,7 @@ public class ShutdownService {
     private static void waitForPendingOperations(long shutdownTime, long nextAlertTime) throws InterruptedException {
         int lastConsumerSize = -1;
         int stuckDetectionCount = 0;
+        boolean abortRequested = false;
 
         if (Consumer.isConsumerThread()) {
             Chat.console("Shutdown requested from the consumer thread, skipping wait for pending data.");
@@ -120,7 +122,14 @@ public class ShutdownService {
                 Chat.console(Phrase.build(Phrase.DATABASE_UNREACHABLE));
                 break;
             }
-            else if ((currentTime - shutdownTime) >= MAX_SHUTDOWN_WAIT_MS) {
+            else if (!ConfigHandler.converterRunning && !abortRequested && (currentTime - shutdownTime) >= Config.getGlobal().SHUTDOWN_TIMEOUT_SECONDS * 1000L) {
+                int consumerId = (Consumer.currentConsumer == 1) ? 1 : 0;
+                int consumerCount = Consumer.getConsumerSize(consumerId) + Process.getCurrentConsumerSize();
+                Chat.console("Shutdown flush timed out after " + Config.getGlobal().SHUTDOWN_TIMEOUT_SECONDS + " seconds; abandoning " + String.format("%,d", consumerCount) + " queued logging actions. The batch already in progress will be committed.");
+                Consumer.requestShutdownAbort();
+                abortRequested = true;
+            }
+            else if ((currentTime - shutdownTime) >= MAX_CONVERSION_SHUTDOWN_WAIT_MS) {
                 Chat.console(Phrase.build(Phrase.LOGGING_TIME_LIMIT));
                 break;
             }

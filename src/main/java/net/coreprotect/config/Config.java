@@ -44,6 +44,7 @@ public class Config extends Language {
     /* Initialized here as well as on load; the consumer divides by BATCH_SIZE, so it must never be 0. */
     public int CONSUMER_INTERVAL = 3000;
     public int BATCH_SIZE = 25000;
+    public int SHUTDOWN_TIMEOUT_SECONDS = 30;
     public boolean ASYNC_INSERT;
     public boolean ASYNC_INSERT_WAIT = true;
     public boolean USERNAME_UPDATES = true;
@@ -115,6 +116,7 @@ public class Config extends Language {
         DEFAULT_VALUES.put("clickhouse-select-use-final", "false");
         DEFAULT_VALUES.put("clickhouse-consumer-interval", "3000");
         DEFAULT_VALUES.put("clickhouse-batch-size", "25000");
+        DEFAULT_VALUES.put("clickhouse-shutdown-timeout-seconds", "30");
         DEFAULT_VALUES.put("clickhouse-async-insert", "false");
         DEFAULT_VALUES.put("clickhouse-async-insert-wait", "true");
         DEFAULT_VALUES.put("clickhouse-username-updates", "true");
@@ -167,6 +169,7 @@ public class Config extends Language {
         HEADERS.put("clickhouse-use-select-final", new String[] { "# Whether to use the final modifier when querying data from the database, prevents duplicate records in lookups directly following a rollback, at the cost of being slightly slower than normal.", "# See https://clickhouse.com/docs/sql-reference/statements/select/from#final-modifier for reference." });
         HEADERS.put("clickhouse-consumer-interval", new String[] { "# How long, in milliseconds, the consumer waits between writing queued data to the database.", "# ClickHouse creates one data part per insert, so a short interval creates parts faster than", "# background merges can consume them, eventually causing \"TOO_MANY_PARTS\" (error 252) and", "# throttled inserts. Raise this if you see that error; lower it for more immediate lookups." });
         HEADERS.put("clickhouse-batch-size", new String[] { "# How many queued actions may accumulate before the consumer flushes mid-cycle.", "# This only bounds memory while working through a backlog; each flush is an extra insert,", "# and therefore an extra data part, so avoid setting it low." });
+        HEADERS.put("clickhouse-shutdown-timeout-seconds", new String[] { "# How long shutdown waits for queued logging actions before abandoning them.", "# Any batch already being processed is committed before the consumer exits, but remaining", "# queued actions are discarded so CoreProtect cannot indefinitely delay server shutdown." });
         HEADERS.put("clickhouse-async-insert", new String[] { "# Lets ClickHouse buffer inserts server-side and combine them into fewer data parts.", "# This mainly helps when many clients insert into the same table at once; the consumer is a single", "# thread that already sends one insert per table per cycle, so raising clickhouse-consumer-interval", "# is usually the more effective option." });
         HEADERS.put("clickhouse-async-insert-wait", new String[] { "# Whether inserts wait for ClickHouse to flush the async buffer before returning.", "# Disabling this stops the consumer from ever being blocked by a slow insert, but failures are then", "# reported after the plugin has moved on, so write errors are no longer logged and recently logged", "# actions may not appear in lookups right away. Only disable it if you accept losing that visibility." });
         HEADERS.put("clickhouse-username-updates", new String[] { "# Whether to rewrite the stored username when a player is seen under a new name.", "# Each rewrite is a ClickHouse mutation, which competes with the background merges that keep the", "# part count down, so this is disabled by default. While disabled, a renamed player keeps being", "# recorded under the name already stored for them, and lookups must use that older name." });
@@ -238,6 +241,7 @@ public class Config extends Language {
         this.SELECT_USE_FINAL = this.getBoolean("clickhouse-select-use-final", false);
         this.CONSUMER_INTERVAL = Math.max(250, this.getInt("clickhouse-consumer-interval"));
         this.BATCH_SIZE = Math.max(1000, this.getInt("clickhouse-batch-size"));
+        this.SHUTDOWN_TIMEOUT_SECONDS = Math.max(1, this.getInt("clickhouse-shutdown-timeout-seconds"));
         this.ASYNC_INSERT = this.getBoolean("clickhouse-async-insert", false);
         this.ASYNC_INSERT_WAIT = this.getBoolean("clickhouse-async-insert-wait", true);
         this.USERNAME_UPDATES = this.getBoolean("clickhouse-username-updates", true);

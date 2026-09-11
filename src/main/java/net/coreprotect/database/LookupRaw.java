@@ -29,27 +29,24 @@ import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Queue;
+import net.coreprotect.database.logger.ItemLogger;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
 import org.jetbrains.annotations.Nullable;
-import net.coreprotect.model.action.LookupActions;
-import net.coreprotect.model.action.SignActions;
-import net.coreprotect.model.item.ItemTransactionActions;
-import net.coreprotect.utility.ErrorReporter;
 
 public class LookupRaw extends Queue {
 
     protected static LookupResult<?> performLookup(Statement statement, CommandSender user, List<String> checkUuids, List<String> checkUsers, List<Object> restrictList, Map<Object, Boolean> excludeList, List<String> excludeUserList, List<String> exemptUserList, List<Integer> actionList, Location location, Integer[] radius, Long[] rowData, long startTime, long endTime, int limitOffset, int limitCount, boolean restrictWorld, boolean lookup, boolean countRows) {
         List<Integer> invalidRollbackActions = new ArrayList<>();
-        invalidRollbackActions.add(LookupActions.INTERACTION);
+        invalidRollbackActions.add(2);
 
-        if (!Config.getGlobal().ROLLBACK_ENTITIES && !actionList.contains(LookupActions.ENTITY_KILL)) {
-            invalidRollbackActions.add(LookupActions.ENTITY_KILL);
+        if (!Config.getGlobal().ROLLBACK_ENTITIES && !actionList.contains(3)) {
+            invalidRollbackActions.add(3);
         }
 
-        if (LookupActions.isInventoryLookup(actionList)) {
+        if (actionList.contains(4) && actionList.contains(11)) {
             invalidRollbackActions.clear();
         }
 
@@ -60,8 +57,9 @@ public class LookupRaw extends Queue {
 
             long rowCount = 0;
 
-            if (actionList.contains(LookupActions.CHAT) || actionList.contains(LookupActions.COMMAND)) {
+            if (actionList.contains(6) || actionList.contains(7)) { // chat/command
                 final List<ChatLookupData> data = new ArrayList<>();
+                final boolean isChat = actionList.contains(6);
 
                 while (results.next()) {
                     if (countRows) {
@@ -83,7 +81,7 @@ public class LookupRaw extends Queue {
                 }
 
                 return new ChatLookupResult(rowCount, data);
-            } else if (actionList.contains(LookupActions.SESSION)) {
+            } else if (actionList.contains(8)) {
                 final List<SessionLookupData> data = new ArrayList<>();
 
                 while (results.next()) {
@@ -103,7 +101,7 @@ public class LookupRaw extends Queue {
                 }
 
                 return new SessionLookupResult(rowCount, data);
-            } else if (actionList.contains(LookupActions.USERNAME)) {
+            } else if (actionList.contains(9)) {
                 final List<UsernameHistoryData> data = new ArrayList<>();
 
                 while (results.next()) {
@@ -119,7 +117,7 @@ public class LookupRaw extends Queue {
                 }
 
                 return new UsernameHistoryLookupResult(rowCount, data);
-            } else if (actionList.contains(LookupActions.SIGN)) {
+            } else if (actionList.contains(10)) {
                 final List<SignLookupData> data = new ArrayList<>();
 
                 while (results.next()) {
@@ -221,7 +219,7 @@ public class LookupRaw extends Queue {
                     int resultWorldId = results.getInt("wid");
                     int version = results.getInt("version");
 
-                    if ((lookup && actionList.isEmpty()) || actionList.contains(LookupActions.CONTAINER) || actionList.contains(5) || actionList.contains(LookupActions.ITEM)) {
+                    if ((lookup && actionList.isEmpty()) || actionList.contains(4) || actionList.contains(5) || actionList.contains(11)) {
                         resultData = results.getInt("data");
                         resultAmount = results.getInt("amount");
                         resultMeta = results.getString("metadata");
@@ -246,7 +244,7 @@ public class LookupRaw extends Queue {
             }
         }
         catch (SQLException e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return null;
@@ -256,12 +254,12 @@ public class LookupRaw extends Queue {
         String query = "";
 
         try {
-            List<Integer> validActions = Arrays.asList(LookupActions.BLOCK_BREAK, LookupActions.BLOCK_PLACE, LookupActions.INTERACTION, LookupActions.ENTITY_KILL);
+            List<Integer> validActions = Arrays.asList(0, 1, 2, 3);
             if (radius != null) {
                 restrictWorld = true;
             }
 
-            boolean inventoryQuery = LookupActions.isInventoryLookup(actionList);
+            boolean inventoryQuery = (actionList.contains(4) && actionList.contains(11));
             boolean validAction = false;
             String queryBlock = "";
             String queryEntity = "";
@@ -444,14 +442,12 @@ public class LookupRaw extends Queue {
             }
 
             // Specify actions to exclude from a:item
-            if ((lookup && actionList.size() == 0) || (actionList.contains(LookupActions.ITEM) && actionList.size() == 1)) {
-                StringBuilder actionText = new StringBuilder();
-                actionText = actionText.append(ItemTransactionActions.BREAK);
-                actionText.append(",").append(ItemTransactionActions.DESTROY);
-                actionText.append(",").append(ItemTransactionActions.CREATE);
-                actionText.append(",").append(ItemTransactionActions.SELL);
-                actionText.append(",").append(ItemTransactionActions.BUY);
-                actionExclude = actionText.toString();
+            if ((lookup && actionList.isEmpty()) || (actionList.contains(11) && actionList.size() == 1)) {
+                actionExclude = ItemLogger.ITEM_BREAK +
+                        "," + ItemLogger.ITEM_DESTROY +
+                        "," + ItemLogger.ITEM_CREATE +
+                        "," + ItemLogger.ITEM_SELL +
+                        "," + ItemLogger.ITEM_BUY;
             }
 
             if (!actionList.isEmpty()) {
@@ -459,12 +455,12 @@ public class LookupRaw extends Queue {
                 for (Integer actionTarget : actionList) {
                     if (validActions.contains(actionTarget)) {
                         // If just looking up drops/pickups, remap the actions to the correct values
-                        if (actionList.contains(LookupActions.ITEM) && !actionList.contains(LookupActions.CONTAINER)) {
-                            if (actionTarget == ItemTransactionActions.REMOVE && !actionList.contains(ItemTransactionActions.DROP)) {
-                                actionTarget = ItemTransactionActions.DROP;
+                        if (actionList.contains(11) && !actionList.contains(4)) {
+                            if (actionTarget == ItemLogger.ITEM_REMOVE && !actionList.contains(ItemLogger.ITEM_DROP)) {
+                                actionTarget = ItemLogger.ITEM_DROP;
                             }
-                            else if (actionTarget == ItemTransactionActions.ADD && !actionList.contains(ItemTransactionActions.PICKUP)) {
-                                actionTarget = ItemTransactionActions.PICKUP;
+                            else if (actionTarget == ItemLogger.ITEM_ADD && !actionList.contains(ItemLogger.ITEM_PICKUP)) {
+                                actionTarget = ItemLogger.ITEM_PICKUP;
                             }
                         }
 
@@ -476,32 +472,32 @@ public class LookupRaw extends Queue {
                         }
 
                         // If selecting from co_item & co_container, add in actions for both transaction types
-                        if (LookupActions.isInventoryLookup(actionList)) {
-                            if (actionTarget == ItemTransactionActions.REMOVE) {
-                                actionText.append(",").append(ItemTransactionActions.PICKUP);
-                                actionText.append(",").append(ItemTransactionActions.REMOVE_ENDER);
-                                actionText.append(",").append(ItemTransactionActions.CREATE);
-                                actionText.append(",").append(ItemTransactionActions.BUY);
+                        if (actionList.contains(11) && actionList.contains(4)) {
+                            if (actionTarget == ItemLogger.ITEM_REMOVE) {
+                                actionText.append(",").append(ItemLogger.ITEM_PICKUP);
+                                actionText.append(",").append(ItemLogger.ITEM_REMOVE_ENDER);
+                                actionText.append(",").append(ItemLogger.ITEM_CREATE);
+                                actionText.append(",").append(ItemLogger.ITEM_BUY);
                             }
-                            if (actionTarget == ItemTransactionActions.ADD) {
-                                actionText.append(",").append(ItemTransactionActions.DROP);
-                                actionText.append(",").append(ItemTransactionActions.ADD_ENDER);
-                                actionText.append(",").append(ItemTransactionActions.THROW);
-                                actionText.append(",").append(ItemTransactionActions.SHOOT);
-                                actionText.append(",").append(ItemTransactionActions.BREAK);
-                                actionText.append(",").append(ItemTransactionActions.DESTROY);
-                                actionText.append(",").append(ItemTransactionActions.SELL);
+                            if (actionTarget == ItemLogger.ITEM_ADD) {
+                                actionText.append(",").append(ItemLogger.ITEM_DROP);
+                                actionText.append(",").append(ItemLogger.ITEM_ADD_ENDER);
+                                actionText.append(",").append(ItemLogger.ITEM_THROW);
+                                actionText.append(",").append(ItemLogger.ITEM_SHOOT);
+                                actionText.append(",").append(ItemLogger.ITEM_BREAK);
+                                actionText.append(",").append(ItemLogger.ITEM_DESTROY);
+                                actionText.append(",").append(ItemLogger.ITEM_SELL);
                             }
                         }
                         // If just looking up drops/pickups, include ender chest transactions
-                        else if (actionList.contains(LookupActions.ITEM) && !actionList.contains(LookupActions.CONTAINER)) {
-                            if (actionTarget == ItemTransactionActions.DROP) {
-                                actionText.append(",").append(ItemTransactionActions.ADD_ENDER);
-                                actionText.append(",").append(ItemTransactionActions.THROW);
-                                actionText.append(",").append(ItemTransactionActions.SHOOT);
+                        else if (actionList.contains(11) && !actionList.contains(4)) {
+                            if (actionTarget == ItemLogger.ITEM_DROP) {
+                                actionText.append(",").append(ItemLogger.ITEM_ADD_ENDER);
+                                actionText.append(",").append(ItemLogger.ITEM_THROW);
+                                actionText.append(",").append(ItemLogger.ITEM_SHOOT);
                             }
-                            if (actionTarget == ItemTransactionActions.PICKUP) {
-                                actionText.append(",").append(ItemTransactionActions.REMOVE_ENDER);
+                            if (actionTarget == ItemLogger.ITEM_PICKUP) {
+                                actionText.append(",").append(ItemLogger.ITEM_REMOVE_ENDER);
                             }
                         }
                     }
@@ -587,8 +583,8 @@ public class LookupRaw extends Queue {
                 queryBlock = queryBlock + " time <= '" + endTime + "' AND";
             }
 
-            if (actionList.contains(LookupActions.SIGN)) {
-                queryBlock = queryBlock + " action = '" + SignActions.PLACE + "' AND (LENGTH(line_1) > 0 OR LENGTH(line_2) > 0 OR LENGTH(line_3) > 0 OR LENGTH(line_4) > 0 OR LENGTH(line_5) > 0 OR LENGTH(line_6) > 0 OR LENGTH(line_7) > 0 OR LENGTH(line_8) > 0) AND";
+            if (actionList.contains(10)) {
+                queryBlock = queryBlock + " action = '1' AND (LENGTH(line_1) > 0 OR LENGTH(line_2) > 0 OR LENGTH(line_3) > 0 OR LENGTH(line_4) > 0 OR LENGTH(line_5) > 0 OR LENGTH(line_6) > 0 OR LENGTH(line_7) > 0 OR LENGTH(line_8) > 0) AND";
             }
 
             if (!queryBlock.isEmpty()) {
@@ -617,27 +613,27 @@ public class LookupRaw extends Queue {
             String rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,toString(meta) as meta,blockdata,rolled_back,version";
             String queryOrder = " ORDER BY rowid DESC";
 
-            if (actionList.contains(LookupActions.CONTAINER) || actionList.contains(5)) {
+            if (actionList.contains(4) || actionList.contains(5)) {
                 queryTable = "container";
                 rows = "rowid as id,time,user,wid,x,y,z,action,type,toString(data) as data,rolled_back,amount,toString(metadata) as metadata,version";
             }
-            else if (actionList.contains(LookupActions.CHAT) || actionList.contains(LookupActions.COMMAND)) {
-                queryTable = actionList.contains(LookupActions.COMMAND) ? "command" : "chat";
+            else if (actionList.contains(6) || actionList.contains(7)) {
+                queryTable = actionList.contains(7) ? "command" : "chat";
                 rows = "rowid as id,time,user,message,wid,x,y,z,cancelled";
             }
-            else if (actionList.contains(LookupActions.SESSION)) {
+            else if (actionList.contains(8)) {
                 queryTable = "session";
                 rows = "rowid as id,time,user,wid,x,y,z,action";
             }
-            else if (actionList.contains(LookupActions.USERNAME)) {
+            else if (actionList.contains(9)) {
                 queryTable = "username_log";
                 rows = "rowid as id,time,uuid,user";
             }
-            else if (actionList.contains(LookupActions.SIGN)) {
+            else if (actionList.contains(10)) {
                 queryTable = "sign";
                 rows = "rowid as id,time,user,wid,x,y,z,face,line_1,line_2,line_3,line_4,line_5,line_6,line_7,line_8";
             }
-            else if (actionList.contains(LookupActions.ITEM)) {
+            else if (actionList.contains(11)) {
                 queryTable = "item";
                 rows = "rowid as id,time,user,wid,x,y,z,type,toString(" + ConfigHandler.prefix + "item.data) as metadata,'0' as data,amount,action,0 as rolled_back,version";
             }
@@ -647,22 +643,22 @@ public class LookupRaw extends Queue {
             String baseSelect = countRows ? "SELECT count(*) over () as count, * FROM (" : unionSelect;
 
             boolean itemLookup = inventoryQuery;
-            if ((lookup && actionList.isEmpty()) || (itemLookup && !actionList.contains(LookupActions.BLOCK_BREAK))) {
+            if ((lookup && actionList.isEmpty()) || (itemLookup && !actionList.contains(0))) {
                 rows = "rowid as id,time,user,wid,x,y,z,type,toString(meta) as metadata,toString(data) as data,-1 as amount,action,rolled_back,version";
 
                 if (inventoryQuery) {
                     if (validAction) {
-                        baseQuery = baseQuery.replace("action IN(" + action + ")", "action IN(" + LookupActions.BLOCK_PLACE + ")");
+                        baseQuery = baseQuery.replace("action IN(" + action + ")", "action IN(1)");
                     }
                     else {
-                        baseQuery = baseQuery.replace("action NOT IN(-1)", "action IN(" + LookupActions.BLOCK_PLACE + ")");
+                        baseQuery = baseQuery.replace("action NOT IN(-1)", "action IN(1)");
                     }
 
                     rows = "rowid as id,time,user,wid,x,y,z,type,toString(meta) as metadata,toString(data) as data,1 as amount,action,rolled_back,version";
                 }
 
                 if (!includeBlock.isEmpty() || !excludeBlock.isEmpty()) {
-                    baseQuery = baseQuery.replace("action NOT IN(-1)", "action NOT IN(" + LookupActions.ENTITY_KILL + ")"); // if block specified for include/exclude, filter out entity data
+                    baseQuery = baseQuery.replace("action NOT IN(-1)", "action NOT IN(3)"); // if block specified for include/exclude, filter out entity data
                 }
 
                 query = baseSelect + "(SELECT " + "'0' as tbl," + rows + " FROM " + ConfigHandler.prefix + "block " + index + "WHERE" + baseQuery + unionLimit + ") UNION ALL ";

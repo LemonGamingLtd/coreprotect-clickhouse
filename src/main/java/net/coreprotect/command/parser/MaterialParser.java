@@ -28,7 +28,6 @@ import org.bukkit.entity.EntityType;
 
 import net.coreprotect.language.Phrase;
 import net.coreprotect.model.BlockGroup;
-import net.coreprotect.model.action.LookupActions;
 import net.coreprotect.utility.BlockTypeUtils;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
@@ -90,10 +89,10 @@ public class MaterialParser {
                         for (String i3 : i2) {
                             if (!checkTags(i3, restricted)) {
                                 Material i3_material = MaterialUtils.getType(i3);
-                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(LookupActions.CONTAINER))) {
+                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(4))) {
                                     restricted.add(i3_material);
                                 }
-                                else if (!argAction.contains(LookupActions.CONTAINER) && BlockTypeUtils.hasBlockType(i3)) {
+                                else if (!argAction.contains(4) && BlockTypeUtils.hasBlockType(i3)) {
                                     restricted.add(BlockTypeUtils.normalizeKey(i3));
                                 }
                                 else {
@@ -122,10 +121,10 @@ public class MaterialParser {
                     else {
                         if (!checkTags(argument, restricted)) {
                             Material material = MaterialUtils.getType(argument);
-                            if (material != null && (material.isBlock() || argAction.contains(LookupActions.CONTAINER))) {
+                            if (material != null && (material.isBlock() || argAction.contains(4))) {
                                 restricted.add(material);
                             }
-                            else if (!argAction.contains(LookupActions.CONTAINER) && BlockTypeUtils.hasBlockType(argument)) {
+                            else if (!argAction.contains(4) && BlockTypeUtils.hasBlockType(argument)) {
                                 restricted.add(BlockTypeUtils.normalizeKey(argument));
                             }
                             else {
@@ -188,10 +187,10 @@ public class MaterialParser {
                         for (String i3 : i2) {
                             if (!checkTags(i3, excluded)) {
                                 Material i3_material = MaterialUtils.getType(i3);
-                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(LookupActions.CONTAINER))) {
+                                if (i3_material != null && (i3_material.isBlock() || argAction.contains(4))) {
                                     excluded.put(i3_material, false);
                                 }
-                                else if (!argAction.contains(LookupActions.CONTAINER) && BlockTypeUtils.hasBlockType(i3)) {
+                                else if (!argAction.contains(4) && BlockTypeUtils.hasBlockType(i3)) {
                                     excluded.put(BlockTypeUtils.normalizeKey(i3), false);
                                 }
                                 else {
@@ -215,10 +214,10 @@ public class MaterialParser {
                     else {
                         if (!checkTags(argument, excluded)) {
                             Material iMaterial = MaterialUtils.getType(argument);
-                            if (iMaterial != null && (iMaterial.isBlock() || argAction.contains(LookupActions.CONTAINER))) {
+                            if (iMaterial != null && (iMaterial.isBlock() || argAction.contains(4))) {
                                 excluded.put(iMaterial, false);
                             }
-                            else if (!argAction.contains(LookupActions.CONTAINER) && BlockTypeUtils.hasBlockType(argument)) {
+                            else if (!argAction.contains(4) && BlockTypeUtils.hasBlockType(argument)) {
                                 excluded.put(BlockTypeUtils.normalizeKey(argument), false);
                             }
                             else {

@@ -27,7 +27,6 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.api.BlockDataProviderRegistry;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.thread.Scheduler;
-import org.jspecify.annotations.Nullable;
 
 public class BlockUtils {
 
@@ -210,22 +209,7 @@ public class BlockUtils {
         }
 
         if (blockData != null) {
-            try {
-                block.setBlockData(blockData, update);
-            }
-            catch (RuntimeException e) {
-                if (!update) {
-                    throw e;
-                }
-
-                try {
-                    block.setBlockData(blockData, false);
-                }
-                catch (RuntimeException retryException) {
-                    e.addSuppressed(retryException);
-                    throw e;
-                }
-            }
+            block.setBlockData(blockData, update);
         }
     }
 
@@ -241,7 +225,7 @@ public class BlockUtils {
                 block.update();
             }
             catch (Exception e) {
-                ErrorReporter.report(e);
+                e.printStackTrace();
             }
         }, block.getLocation());
     }
@@ -264,7 +248,7 @@ public class BlockUtils {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         return inventory;
     }
@@ -308,11 +292,7 @@ public class BlockUtils {
         return new SerializedBlockMeta(command, items, bannerData, providerData);
     }
 
-    public static @Nullable SerializedBlockMeta deserializeMeta(@Nullable String metaJson) {
-        if (metaJson == null || metaJson.isEmpty()) {
-            return null;
-        }
-
+    public static SerializedBlockMeta deserializeMeta(String metaJson) {
         return JsonSerialization.GSON.fromJson(metaJson, SerializedBlockMeta.class);
     }
 
@@ -322,7 +302,7 @@ public class BlockUtils {
             contents = new ItemStack[] { blockState.getRecord() };
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         return contents;
     }

@@ -26,7 +26,6 @@ import java.util.TreeMap;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.language.Language;
 import net.coreprotect.language.Phrase;
-import net.coreprotect.utility.ErrorReporter;
 
 public class ConfigFile extends Config {
 
@@ -202,7 +201,7 @@ public class ConfigFile extends Config {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -223,7 +222,7 @@ public class ConfigFile extends Config {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

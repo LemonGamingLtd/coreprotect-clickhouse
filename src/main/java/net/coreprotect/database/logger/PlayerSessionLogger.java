@@ -8,7 +8,6 @@ import org.bukkit.Location;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.statement.SessionStatement;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class PlayerSessionLogger {
 
@@ -29,7 +28,7 @@ public class PlayerSessionLogger {
             SessionStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, action);
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

@@ -21,7 +21,6 @@ import net.coreprotect.config.Config;
 import net.coreprotect.language.Phrase;
 import net.coreprotect.language.Selector;
 import net.coreprotect.utility.Chat;
-import net.coreprotect.utility.ErrorReporter;
 
 public class PluginChannelHandshakeListener implements PluginMessageListener, Listener {
 
@@ -96,7 +95,7 @@ public class PluginChannelHandshakeListener implements PluginMessageListener, Li
         }
         catch (Exception exception) {
             Chat.console(exception.toString());
-            ErrorReporter.report(exception);
+            exception.printStackTrace();
         }
     }
 

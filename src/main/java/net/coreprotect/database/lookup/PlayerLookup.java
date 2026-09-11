@@ -10,7 +10,6 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.Database;
 import net.coreprotect.database.statement.UserStatement;
-import net.coreprotect.utility.ErrorReporter;
 
 public class PlayerLookup {
 
@@ -45,7 +44,7 @@ public class PlayerLookup {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return false;

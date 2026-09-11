@@ -4,7 +4,6 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 
 import java.sql.PreparedStatement;
-import net.coreprotect.utility.ErrorReporter;
 
 public class WorldStatement {
 
@@ -16,7 +15,7 @@ public class WorldStatement {
         try {
             preparedStmt.setInt(1, id);
             preparedStmt.setString(2, world);
-            preparedStmt.setLong(3, CoreProtect.getInstance().rowNumbers().nextRowNumber("world", preparedStmt.getConnection()));
+            preparedStmt.setInt(3, CoreProtect.getInstance().rowNumbers().nextRowId("world", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -24,7 +23,7 @@ public class WorldStatement {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 }

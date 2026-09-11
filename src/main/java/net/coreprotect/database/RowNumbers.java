@@ -32,7 +32,6 @@ public class RowNumbers {
         this.file = plugin.getDataPath().resolve("row-numbers.json");
     }
 
-    @Deprecated(forRemoval = true)
     public int nextRowId(final String tableName, Connection connection) {
         return Math.toIntExact(nextRowNumber(tableName, connection));
     }

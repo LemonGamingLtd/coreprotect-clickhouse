@@ -34,7 +34,7 @@ public class DatabaseUtils {
             preparedStmt.close();
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         return result;
     }

@@ -9,7 +9,6 @@ import org.bukkit.entity.Player;
 
 import net.coreprotect.database.lookup.ChestTransactionLookup;
 import net.coreprotect.utility.Chat;
-import net.coreprotect.utility.ErrorReporter;
 
 public class ContainerInspector extends BaseInspector {
 
@@ -34,7 +33,7 @@ public class ContainerInspector extends BaseInspector {
                     Chat.sendMessage(player, e.getMessage());
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
                 finally {
                     finishInspection(player);

@@ -12,7 +12,6 @@ import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.thread.CacheHandler;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class BlockLookup {
 
@@ -49,7 +48,7 @@ public class BlockLookup {
             results.close();
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return result;
@@ -84,7 +83,7 @@ public class BlockLookup {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return result;
@@ -112,7 +111,7 @@ public class BlockLookup {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return result;

@@ -8,7 +8,6 @@ import java.util.List;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.utility.BlockUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class LookupConverter {
 
@@ -55,7 +54,7 @@ public class LookupConverter {
                     }
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }
             newList.add(results);

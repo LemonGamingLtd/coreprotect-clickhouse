@@ -31,8 +31,9 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
+import net.coreprotect.database.logger.ItemLogger;
+import net.coreprotect.event.CoreProtectRollbackEvent;
 import net.coreprotect.model.BlockGroup;
-import net.coreprotect.model.item.ItemTransactionActions;
 import net.coreprotect.thread.Scheduler;
 import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.BlockTypeUtils;
@@ -40,7 +41,6 @@ import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.Teleport;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class RollbackProcessor {
 
@@ -260,7 +260,11 @@ public class RollbackProcessor {
             data.clear();
 
             // Apply cached block changes
+            List<Location> changedBlocks = (preview == 0 && !chunkChanges.isEmpty()) ? List.copyOf(chunkChanges.keySet()) : List.of();
             RollbackBlockHandler.applyBlockChanges(chunkChanges, preview, finalUser instanceof Player ? (Player) finalUser : null);
+            if (!changedBlocks.isEmpty()) {
+                new CoreProtectRollbackEvent(bukkitRollbackWorld, finalChunkX, finalChunkZ, changedBlocks, rollbackType == 1).callEvent();
+            }
 
             // Process container items
             Map<Player, List<Integer>> sortPlayers = new HashMap<>();
@@ -315,12 +319,22 @@ public class RollbackProcessor {
                             continue;
                         }
 
-                        int inventoryAction = ItemTransactionActions.getInventoryActionId(rowAction);
+                        int inventoryAction = 0;
+                        if (rowAction == ItemLogger.ITEM_DROP || rowAction == ItemLogger.ITEM_PICKUP || rowAction == ItemLogger.ITEM_THROW || rowAction == ItemLogger.ITEM_SHOOT || rowAction == ItemLogger.ITEM_BREAK || rowAction == ItemLogger.ITEM_DESTROY || rowAction == ItemLogger.ITEM_CREATE || rowAction == ItemLogger.ITEM_SELL || rowAction == ItemLogger.ITEM_BUY) {
+                            inventoryAction = ((rowAction == ItemLogger.ITEM_PICKUP || rowAction == ItemLogger.ITEM_CREATE || rowAction == ItemLogger.ITEM_BUY) ? 1 : 0);
+                        }
+                        else if (rowAction == ItemLogger.ITEM_REMOVE_ENDER || rowAction == ItemLogger.ITEM_ADD_ENDER) {
+                            inventoryAction = (rowAction == ItemLogger.ITEM_REMOVE_ENDER ? 1 : 0);
+                        }
+                        else {
+                            inventoryAction = (rowAction == ItemLogger.ITEM_REMOVE ? 1 : 0);
+                        }
+
                         int action = rollbackType == 0 ? (inventoryAction ^ 1) : inventoryAction;
 
                         SerializedItem item = ItemUtils.deserializeItem(rowMetadata, rowType, rowAmount);
 
-                        if (rowAction == ItemTransactionActions.REMOVE_ENDER || rowAction == ItemTransactionActions.ADD_ENDER) {
+                        if (rowAction == ItemLogger.ITEM_REMOVE_ENDER || rowAction == ItemLogger.ITEM_ADD_ENDER) {
                             RollbackUtil.modifyContainerItems(containerType, player.getEnderChest(), item.slot(), item.itemStack().clone(), action ^ 1);
                         }
 
@@ -450,7 +464,7 @@ public class RollbackProcessor {
             return true;
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
             int[] rollbackHashData = ConfigHandler.rollbackHash.get(finalUserString);
             int itemCount = rollbackHashData[0];
             int blockCount = rollbackHashData[1];

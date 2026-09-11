@@ -18,7 +18,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.BannerMeta;
@@ -39,7 +38,6 @@ import net.coreprotect.consumer.Queue;
 import net.coreprotect.database.Lookup;
 import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.ItemUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class RollbackUtil extends Lookup {
 
@@ -95,16 +93,7 @@ public class RollbackUtil extends Lookup {
                 }
             }
             else if (type != null && type.equals(Material.JUKEBOX)) {
-                Jukebox jukebox = null;
-                if (container instanceof Jukebox) {
-                    jukebox = (Jukebox) container;
-                }
-                else if (container instanceof Inventory) {
-                    InventoryHolder holder = ((Inventory) container).getHolder();
-                    if (holder instanceof Jukebox) {
-                        jukebox = (Jukebox) holder;
-                    }
-                }
+                Jukebox jukebox = (Jukebox) container;
                 if (jukebox != null) {
                     if (action == 1 && itemstack.getType().name().startsWith("MUSIC_DISC")) {
                         itemstack.setAmount(1);
@@ -231,7 +220,7 @@ public class RollbackUtil extends Lookup {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return modifiedArmor;
@@ -262,7 +251,7 @@ public class RollbackUtil extends Lookup {
             inventory.setStorageContents(storageContents);
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -281,7 +270,7 @@ public class RollbackUtil extends Lookup {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -481,7 +470,7 @@ public class RollbackUtil extends Lookup {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         return new Object[] { slot, faceData, itemstack };
     }
@@ -493,7 +482,7 @@ public class RollbackUtil extends Lookup {
                 return populateItemStack(itemstack, metaList);
             }
             catch (Exception e) {
-                ErrorReporter.report(e);
+                e.printStackTrace();
             }
         }
 
@@ -522,7 +511,7 @@ public class RollbackUtil extends Lookup {
             return metaList;
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
             return null;
         }
     }

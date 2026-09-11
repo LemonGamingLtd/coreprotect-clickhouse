@@ -17,7 +17,6 @@ import net.coreprotect.consumer.process.Process;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.StringUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 /**
  * Provides API methods for looking up block-related actions in the processing queue.
@@ -104,7 +103,7 @@ public class QueueLookup extends Queue {
             Collections.reverse(result);
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return result;

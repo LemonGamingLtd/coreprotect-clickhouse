@@ -25,7 +25,6 @@ import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.ItemUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public final class ArmorStandManipulateListener extends Queue implements Listener {
 
@@ -69,7 +68,7 @@ public final class ArmorStandManipulateListener extends Queue implements Listene
                     }
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
 
                 ConfigHandler.lookupThrottle.put(finalPlayer.getName(), new Object[] { false, System.currentTimeMillis() });

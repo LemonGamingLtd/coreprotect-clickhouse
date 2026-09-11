@@ -8,7 +8,6 @@ import net.coreprotect.language.Phrase;
 import net.coreprotect.thread.NetworkHandler;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
-import net.coreprotect.utility.ErrorReporter;
 
 public class ReloadCommand {
     protected static void runCommand(final CommandSender player, boolean permission, String[] args) {
@@ -49,7 +48,7 @@ public class ReloadCommand {
                         networkHandler.start();
                     }
                     catch (Exception e) {
-                        ErrorReporter.report(e);
+                        e.printStackTrace();
                     }
 
                     Consumer.isPaused = false;

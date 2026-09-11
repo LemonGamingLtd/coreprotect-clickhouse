@@ -14,7 +14,6 @@ import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.Extensions;
 import net.coreprotect.utility.VersionUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class CommandHandler implements CommandExecutor {
     private static CommandHandler instance;
@@ -78,9 +77,6 @@ public class CommandHandler implements CommandExecutor {
                     } else if (corecommand.equals("convert") && user.hasPermission("coreprotect.convert-clickhouse")) {
                         permission = true;
                     }
-                    else if (user.hasPermission("coreprotect.give") && corecommand.equals("give")) {
-                        permission = true;
-                    }
                 }
 
                 if (corecommand.equals("rollback") || corecommand.equals("restore") || corecommand.equals("rb") || corecommand.equals("rs") || corecommand.equals("ro") || corecommand.equals("re")) {
@@ -125,9 +121,6 @@ public class CommandHandler implements CommandExecutor {
                 else if (corecommand.equals("network-debug")) {
                     NetworkDebugCommand.runCommand(user, permission, argumentArray);
                 }
-                else if (corecommand.equals("give")) {
-                    GiveCommand.runCommand(user, command, permission, argumentArray);
-                }
                 else if (corecommand.equals("migrate-db")) {
                     if (!VersionUtils.validDonationKey()) {
                         Chat.sendMessage(user, Color.DARK_AQUA + "CoreProtect " + Color.WHITE + "- " + Phrase.build(Phrase.DONATION_KEY_REQUIRED));
@@ -150,26 +143,25 @@ public class CommandHandler implements CommandExecutor {
             if (user.isOp() && versionAlert.get(user.getName()) == null) {
                 String latestVersion = NetworkHandler.latestVersion();
                 String latestEdgeVersion = NetworkHandler.latestEdgeVersion();
-                boolean communityEdition = VersionUtils.isCommunityEdition();
-                if (latestVersion != null || (latestEdgeVersion != null && !communityEdition)) {
+                if (latestVersion != null || latestEdgeVersion != null) {
                     versionAlert.put(user.getName(), true);
                     class updateAlert implements Runnable {
                         @Override
                         public void run() {
                             try {
                                 Thread.sleep(5000);
-                                Chat.sendMessage(user, Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.UPDATE_HEADER, "CoreProtect" + (communityEdition ? " " + ConfigHandler.COMMUNITY_EDITION : "")) + Color.WHITE + " -----");
+                                Chat.sendMessage(user, Color.WHITE + "----- " + Color.DARK_AQUA + Phrase.build(Phrase.UPDATE_HEADER, "CoreProtect" + (VersionUtils.isCommunityEdition() ? " " + ConfigHandler.COMMUNITY_EDITION : "")) + Color.WHITE + " -----");
                                 if (latestVersion != null) {
                                     Chat.sendMessage(user, Color.DARK_AQUA + Phrase.build(Phrase.UPDATE_NOTICE, Color.WHITE, "CoreProtect CE v" + latestVersion));
                                     Chat.sendMessage(user, Color.DARK_AQUA + Phrase.build(Phrase.LINK_DOWNLOAD, Color.WHITE, "www.coreprotect.net/download/"));
                                 }
-                                else {
+                                else if (!VersionUtils.isCommunityEdition()) {
                                     Chat.sendMessage(user, Color.DARK_AQUA + Phrase.build(Phrase.UPDATE_NOTICE, Color.WHITE, "CoreProtect v" + latestEdgeVersion));
                                     Chat.sendMessage(user, Color.DARK_AQUA + Phrase.build(Phrase.LINK_DOWNLOAD, Color.WHITE, "www.coreprotect.net/latest/"));
                                 }
                             }
                             catch (Exception e) {
-                                ErrorReporter.report(e);
+                                e.printStackTrace();
                             }
                         }
                     }

@@ -36,11 +36,8 @@ import net.coreprotect.utility.Color;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.VersionUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class PurgeCommand extends Consumer {
-
-    public static final List<String> PURGE_TABLES = Arrays.asList("sign", "container", "item", "skull", "session", "chat", "command", "entity", "block");
 
     private static String findUnsupportedPurgeArgument(String[] args) {
         boolean includeContinuation = false;
@@ -328,13 +325,14 @@ public class PurgeCommand extends Consumer {
                                 preparedStmt.close();
                             }
                             catch (Exception e) {
-                                ErrorReporter.report(e);
+                                e.printStackTrace();
                             }
                         }
 
                         Database.createDatabaseTables(purgePrefix, false, null, Config.getGlobal().MYSQL, true);
                     }
 
+                    List<String> purgeTables = Arrays.asList("sign", "container", "item", "skull", "session", "chat", "command", "entity", "block");
                     List<String> worldTables = Arrays.asList("sign", "container", "item", "session", "chat", "command", "block");
                     List<String> restrictTables = Arrays.asList("block");
                     List<String> excludeTables = Arrays.asList("database_lock"); // don't insert data into these tables
@@ -363,7 +361,7 @@ public class PurgeCommand extends Consumer {
                                 try {
                                     boolean purge = true;
                                     String timeLimit = "";
-                                    if (PURGE_TABLES.contains(table)) {
+                                    if (purgeTables.contains(table)) {
                                         String blockRestriction = "(";
                                         if (hasBlockRestriction && restrictTables.contains(table)) {
                                             blockRestriction = "type NOT IN(" + includeBlockFinal + ") OR (type IN(" + includeBlockFinal + ") AND ";
@@ -386,7 +384,7 @@ public class PurgeCommand extends Consumer {
                                 }
                                 catch (Exception e) {
                                     error = true;
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                 }
                             }
 
@@ -401,7 +399,7 @@ public class PurgeCommand extends Consumer {
                                     preparedStmt.close();
                                 }
                                 catch (Exception e) {
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                 }
 
                                 try {
@@ -411,7 +409,7 @@ public class PurgeCommand extends Consumer {
                                     preparedStmt.close();
                                 }
                                 catch (Exception e) {
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                 }
 
                                 try {
@@ -422,13 +420,13 @@ public class PurgeCommand extends Consumer {
                                     preparedStmt.close();
                                 }
                                 catch (Exception e) {
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                     abort = true;
                                     break;
                                 }
 
                                 try {
-                                    boolean purge = PURGE_TABLES.contains(table);
+                                    boolean purge = purgeTables.contains(table);
 
                                     String blockRestriction = "";
                                     if (hasBlockRestriction && restrictTables.contains(table)) {
@@ -454,11 +452,11 @@ public class PurgeCommand extends Consumer {
                                     }
                                 }
                                 catch (Exception e) {
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                 }
                             }
 
-                            if (PURGE_TABLES.contains(table)) {
+                            if (purgeTables.contains(table)) {
                                 int oldCount = 0;
                                 try {
                                     query = "SELECT COUNT(*) as count FROM " + ConfigHandler.prefix + table + " LIMIT 0, 1";
@@ -471,7 +469,7 @@ public class PurgeCommand extends Consumer {
                                     preparedStmt.close();
                                 }
                                 catch (Exception e) {
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                 }
 
                                 int new_count = 0;
@@ -486,7 +484,7 @@ public class PurgeCommand extends Consumer {
                                     preparedStmt.close();
                                 }
                                 catch (Exception e) {
-                                    ErrorReporter.report(e);
+                                    e.printStackTrace();
                                 }
 
                                 removed = removed + (oldCount - new_count);
@@ -495,7 +493,7 @@ public class PurgeCommand extends Consumer {
 
                         if (Config.getGlobal().MYSQL) {
                             try {
-                                boolean purge = PURGE_TABLES.contains(table);
+                                boolean purge = purgeTables.contains(table);
 
                                 String blockRestriction = "";
                                 if (hasBlockRestriction && restrictTables.contains(table)) {
@@ -527,7 +525,7 @@ public class PurgeCommand extends Consumer {
                                     return;
                                 }
 
-                                ErrorReporter.report(e);
+                                e.printStackTrace();
                             }
                         }
                     }
@@ -567,7 +565,7 @@ public class PurgeCommand extends Consumer {
                 }
                 catch (Exception e) {
                     Chat.sendGlobalMessage(player, Phrase.build(Phrase.PURGE_FAILED));
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
 
                 Consumer.isPaused = false;

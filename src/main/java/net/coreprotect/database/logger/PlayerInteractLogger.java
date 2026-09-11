@@ -13,11 +13,9 @@ import net.coreprotect.consumer.data.QueuedBlockState;
 import net.coreprotect.database.statement.BlockStatement;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.event.CoreProtectPreLogEvent;
-import net.coreprotect.model.action.LookupActions;
 import net.coreprotect.utility.BlockTypeUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class PlayerInteractLogger {
 
@@ -48,7 +46,7 @@ public class PlayerInteractLogger {
                 return;
             }
 
-            CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user, location, CoreProtectPreLogEvent.Action.PLAYER_INTERACTION, LookupActions.INTERACTION, blockType, null, null);
+            CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user, location, CoreProtectPreLogEvent.Action.PLAYER_INTERACTION, 2, blockType, null, null);
             if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
                 CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
             }
@@ -65,10 +63,10 @@ public class PlayerInteractLogger {
             int y = eventLocation.getBlockY();
             int z = eventLocation.getBlockZ();
             int data = 0;
-            BlockStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, type, data, null, blockData, LookupActions.INTERACTION, 0);
+            BlockStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, type, data, null, blockData, 2, 0);
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

@@ -125,7 +125,7 @@ public class Teleport {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

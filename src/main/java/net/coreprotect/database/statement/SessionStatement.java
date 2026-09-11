@@ -4,7 +4,6 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 
 import java.sql.PreparedStatement;
-import net.coreprotect.utility.ErrorReporter;
 
 public class SessionStatement {
 
@@ -21,7 +20,7 @@ public class SessionStatement {
             preparedStmt.setInt(5, y);
             preparedStmt.setInt(6, z);
             preparedStmt.setInt(7, action);
-            preparedStmt.setLong(8, CoreProtect.getInstance().rowNumbers().nextRowNumber("session", preparedStmt.getConnection()));
+            preparedStmt.setInt(8, CoreProtect.getInstance().rowNumbers().nextRowId("session", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -29,7 +28,7 @@ public class SessionStatement {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 }

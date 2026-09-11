@@ -14,7 +14,6 @@ import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.thread.CacheHandler;
 import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class RollbackEntityHandler {
 
@@ -102,7 +101,7 @@ public class RollbackEntityHandler {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return 0;

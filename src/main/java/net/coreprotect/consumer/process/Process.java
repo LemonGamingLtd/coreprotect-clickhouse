@@ -17,8 +17,6 @@ import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.consumer.Consumer;
 import net.coreprotect.database.Database;
 import net.coreprotect.database.statement.UserStatement;
-import net.coreprotect.model.rollback.RollbackUpdateTargets;
-import net.coreprotect.utility.ErrorReporter;
 
 public class Process {
 
@@ -75,7 +73,7 @@ public class Process {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -190,19 +188,19 @@ public class Process {
                                     StructureGrowthProcess.process(statement, preparedStmtBlocks, i, processId, id, user, object, forceData);
                                     break;
                                 case Process.ROLLBACK_UPDATE:
-                                    RollbackUpdateProcess.process(statement, processId, id, forceData, RollbackUpdateTargets.BLOCK);
+                                    RollbackUpdateProcess.process(statement, processId, id, forceData, 0);
                                     break;
                                 case Process.CONTAINER_ROLLBACK_UPDATE:
-                                    RollbackUpdateProcess.process(statement, processId, id, forceData, RollbackUpdateTargets.CONTAINER);
+                                    RollbackUpdateProcess.process(statement, processId, id, forceData, 1);
                                     break;
                                 case Process.INVENTORY_ROLLBACK_UPDATE:
-                                    RollbackUpdateProcess.process(statement, processId, id, forceData, RollbackUpdateTargets.INVENTORY_ITEM);
+                                    RollbackUpdateProcess.process(statement, processId, id, forceData, 2);
                                     break;
                                 case Process.INVENTORY_CONTAINER_ROLLBACK_UPDATE:
-                                    RollbackUpdateProcess.process(statement, processId, id, forceData, RollbackUpdateTargets.INVENTORY_CONTAINER);
+                                    RollbackUpdateProcess.process(statement, processId, id, forceData, 3);
                                     break;
                                 case Process.BLOCK_INVENTORY_ROLLBACK_UPDATE:
-                                    RollbackUpdateProcess.process(statement, processId, id, forceData, RollbackUpdateTargets.BLOCK_INVENTORY);
+                                    RollbackUpdateProcess.process(statement, processId, id, forceData, 4);
                                     break;
                                 case Process.WORLD_INSERT:
                                     WorldInsertProcess.process(preparedStmtWorlds, i, statement, object, forceData);
@@ -270,7 +268,7 @@ public class Process {
                             }
                         }
                         catch (Exception e) {
-                            ErrorReporter.report(e);
+                            logBatchFailure("consumer", e);
                         }
                     }
                 }
@@ -304,7 +302,7 @@ public class Process {
             currentConsumerSize = 0;
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         Consumer.consumer_id.put(processId, new Integer[] { 0, 0 });
@@ -331,7 +329,7 @@ public class Process {
             Database.commitTransaction(statement, Config.getGlobal().MYSQL);
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            logBatchFailure("commit", e);
         }
     }
 
@@ -345,8 +343,8 @@ public class Process {
             try {
                 preparedStmt.clearBatch();
             }
-            catch (Exception batchError) {
-                ErrorReporter.report(batchError);
+            catch (Exception ignored) {
+                // statement is unusable, nothing further to do
             }
         }
     }

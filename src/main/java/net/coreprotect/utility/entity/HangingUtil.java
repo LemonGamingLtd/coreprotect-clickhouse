@@ -18,7 +18,6 @@ import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.MaterialUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class HangingUtil {
 
@@ -40,7 +39,7 @@ public class HangingUtil {
                     hangingFace = BlockFace.valueOf(hangingData.split("=")[1].toUpperCase(Locale.ROOT));
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }
 
@@ -169,7 +168,7 @@ public class HangingUtil {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -181,7 +180,7 @@ public class HangingUtil {
                     hangingFace = BlockFace.valueOf(hangingData.split("=")[1].toUpperCase(Locale.ROOT));
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }
 
@@ -197,7 +196,7 @@ public class HangingUtil {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

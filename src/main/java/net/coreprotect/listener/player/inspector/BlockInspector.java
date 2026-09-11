@@ -10,7 +10,6 @@ import org.bukkit.entity.Player;
 
 import net.coreprotect.database.lookup.BlockLookup;
 import net.coreprotect.utility.Chat;
-import net.coreprotect.utility.ErrorReporter;
 
 public class BlockInspector extends BaseInspector {
 
@@ -47,7 +46,7 @@ public class BlockInspector extends BaseInspector {
                     Chat.sendMessage(player, e.getMessage());
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
                 finally {
                     finishInspection(player);
@@ -100,7 +99,7 @@ public class BlockInspector extends BaseInspector {
                     Chat.sendMessage(player, e.getMessage());
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
                 finally {
                     finishInspection(player);

@@ -93,7 +93,7 @@ public class WorldUtils extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return id;

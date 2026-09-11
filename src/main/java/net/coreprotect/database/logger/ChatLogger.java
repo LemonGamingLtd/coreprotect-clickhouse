@@ -8,7 +8,6 @@ import org.bukkit.Location;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.statement.ChatStatement;
 import net.coreprotect.utility.WorldUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class ChatLogger {
 
@@ -33,7 +32,7 @@ public class ChatLogger {
             ChatStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, message, cancelled);
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

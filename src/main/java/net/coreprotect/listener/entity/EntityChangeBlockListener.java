@@ -65,7 +65,9 @@ public final class EntityChangeBlockListener extends Queue implements Listener {
             e = "#zombie";
         }
         else if (entity instanceof Silverfish) {
-            e = "#silverfish";
+            if (newtype.equals(Material.AIR) || newtype.equals(Material.CAVE_AIR)) {
+                e = "#silverfish";
+            }
         }
         else if (entity.getType().name().equals("WIND_CHARGE")) {
             e = "#windcharge";
@@ -109,7 +111,7 @@ public final class EntityChangeBlockListener extends Queue implements Listener {
         String user = "#gravity";
         if (originData != null) {
             String originKey = (String) originData[1];
-            String lookupUser = lookupCachedUser(originKey, newtype);
+            String lookupUser = lookupCachedUser(originKey, fallingBlock.getBlockData().getMaterial());
             if (lookupUser != null) {
                 user = lookupUser;
             }

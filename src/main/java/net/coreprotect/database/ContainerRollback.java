@@ -34,7 +34,6 @@ import net.coreprotect.utility.BlockUtils;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.MaterialUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class ContainerRollback extends Rollback {
 
@@ -152,7 +151,7 @@ public class ContainerRollback extends Rollback {
                     ConfigHandler.rollbackHash.put(finalUserString, new int[] { itemCount, modifyCount, entityCount, 1, 1 });
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }, location, 0);
 
@@ -188,7 +187,7 @@ public class ContainerRollback extends Rollback {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 

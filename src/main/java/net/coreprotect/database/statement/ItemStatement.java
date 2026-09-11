@@ -6,7 +6,6 @@ import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
 import net.coreprotect.utility.ItemUtils;
 import org.bukkit.inventory.ItemStack;
-import net.coreprotect.utility.ErrorReporter;
 
 public class ItemStatement {
 
@@ -27,7 +26,7 @@ public class ItemStatement {
             preparedStmt.setInt(9, amount);
             preparedStmt.setInt(10, action);
             preparedStmt.setInt(11, 0); // rolled_back
-            preparedStmt.setLong(12, CoreProtect.getInstance().rowNumbers().nextRowNumber("item", preparedStmt.getConnection()));
+            preparedStmt.setInt(12, CoreProtect.getInstance().rowNumbers().nextRowId("item", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -35,7 +34,7 @@ public class ItemStatement {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 }

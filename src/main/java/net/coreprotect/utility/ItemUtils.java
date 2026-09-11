@@ -37,6 +37,7 @@ import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
 public class ItemUtils {
+
     private static final Object UNSERIALIZABLE_VALUE = new Object();
     private static final Logger LOGGER = Logger.getLogger("CoreProtect");
     private static final int MAX_SANITIZE_ATTEMPTS = 2;
@@ -91,7 +92,7 @@ public class ItemUtils {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -310,7 +311,7 @@ public class ItemUtils {
                 }
             }
             catch (Exception e) {
-                ErrorReporter.report(e);
+                e.printStackTrace();
             }
         }
 
@@ -323,7 +324,7 @@ public class ItemUtils {
             equipment = entity.getEquipment();
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         return equipment;
     }
@@ -334,7 +335,7 @@ public class ItemUtils {
             contents = new ItemStack[] { entity.getItem() };
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         return contents;
     }
@@ -433,10 +434,12 @@ public class ItemUtils {
                 }
             }
 
-            if (sanitized && ConfigHandler.EDITION_BRANCH.contains("-dev")) {
-                LOGGER.warning("CoreProtect failed to serialize metadata after targeted type sanitization.");
+            if (ConfigHandler.EDITION_BRANCH.contains("-dev")) {
+                if (sanitized) {
+                    LOGGER.warning("CoreProtect failed to serialize metadata after targeted type sanitization.");
+                }
+                failure.printStackTrace();
             }
-            ErrorReporter.report(failure, ConfigHandler.EDITION_BRANCH.contains("-dev"));
         }
 
         return null;
@@ -644,8 +647,10 @@ public class ItemUtils {
             org.bukkit.configuration.serialization.DelegateDeserialization delegate = itemMetaClass.getAnnotation(org.bukkit.configuration.serialization.DelegateDeserialization.class);
             return (ItemMeta) org.bukkit.configuration.serialization.ConfigurationSerialization.deserializeObject(args, delegate.value());
         }
-        catch (Exception e) { // only print exception on development branch
-            ErrorReporter.report(e, ConfigHandler.EDITION_BRANCH.contains("-dev"));
+        catch (Exception e) { // only display exception on development branch
+            if (ConfigHandler.EDITION_BRANCH.contains("-dev")) {
+                e.printStackTrace();
+            }
         }
 
         return null;

@@ -27,7 +27,6 @@ import net.coreprotect.model.BlockGroup;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.ItemUtils;
-import net.coreprotect.utility.ErrorReporter;
 
 public class Database extends Queue {
 
@@ -67,7 +66,7 @@ public class Database extends Queue {
     }
 
     public static void beginTransaction(Statement statement, boolean isMySQL) {
-        if (true) return; // CH - transactions don't exist
+        if (true) return; // TODO CH
         Consumer.transacting = true;
 
         try {
@@ -79,12 +78,12 @@ public class Database extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
     public static void commitTransaction(Statement statement, boolean isMySQL) throws Exception {
-        if (true) return; // CH - transactions don't exist
+        if (true) return; // TODO CH
         int count = 0;
 
         while (true) {
@@ -104,24 +103,13 @@ public class Database extends Queue {
                     continue;
                 }
                 else {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }
 
             Consumer.transacting = false;
             Consumer.interrupt = false;
             return;
-        }
-    }
-
-    public static void setMultiInt(PreparedStatement statement, int value, int count) {
-        try {
-            for (int i = 1; i <= count; i++) {
-                statement.setInt(i, value);
-            }
-        }
-        catch (Exception e) {
-            ErrorReporter.report(e);
         }
     }
 
@@ -144,7 +132,7 @@ public class Database extends Queue {
                     }
                 }
                 catch (Exception e) {
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }
         }
@@ -173,7 +161,7 @@ public class Database extends Queue {
                 catch (Exception e) {
                     ConfigHandler.databaseReachable = false;
                     Chat.sendConsoleMessage(Color.RED + "[CoreProtect] " + Phrase.build(Phrase.MYSQL_UNAVAILABLE));
-                    ErrorReporter.report(e);
+                    e.printStackTrace();
                 }
             }
             else {
@@ -198,7 +186,7 @@ public class Database extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return connection;
@@ -212,7 +200,7 @@ public class Database extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -235,7 +223,7 @@ public class Database extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
 
         return preparedStatement;
@@ -258,7 +246,7 @@ public class Database extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 
@@ -285,7 +273,7 @@ public class Database extends Queue {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
         if (!success && forceConnection == null) {
             throw new IllegalStateException("Failed to create default database structure, see error(s) above for details.");
@@ -302,7 +290,7 @@ public class Database extends Queue {
 
         // Block
         orderBy = "ORDER BY (wid, y, x, z, time, user, type)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data Int64, meta String, blockdata LowCardinality(String), action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "block(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data Int32, meta JSON, blockdata LowCardinality(String), action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy);
 
         // Chat
         orderBy = "ORDER BY (user, time, wid, x, z)";
@@ -314,11 +302,11 @@ public class Database extends Queue {
 
         // Container
         orderBy = "ORDER BY (wid, y, x, z, time, user, type)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "container(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data UInt32, amount UInt32, metadata String, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "container(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data UInt32, amount UInt32, metadata JSON, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy);
 
         // Item
         orderBy = "ORDER BY (wid, y, x, z, time, user, type)";
-        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "item(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data String, amount UInt32, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy);
+        statement.executeUpdate("CREATE TABLE IF NOT EXISTS " + prefix + "item(rowid UInt64, time UInt32, user UInt32, wid UInt32, x Int32, y Int16, z Int32, type UInt32, data JSON, amount UInt32, action UInt8, rolled_back UInt8, version UInt8) ENGINE = ReplacingMergeTree(version) " + orderBy + partitionBy);
 
         // Database lock
         orderBy = "ORDER BY rowid";

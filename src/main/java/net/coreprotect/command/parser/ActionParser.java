@@ -4,10 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import net.coreprotect.model.action.LookupActions;
-import net.coreprotect.model.action.SessionActions;
-import net.coreprotect.model.item.ItemTransactionActions;
-
 /**
  * Parser for action-related command arguments
  */
@@ -57,83 +53,83 @@ public class ActionParser {
                         argument = argument.replaceFirst("#", "");
                     }
                     if (argument.equals("broke") || argument.equals("break") || argument.equals("remove") || argument.equals("destroy") || argument.equals("block-break") || argument.equals("block-remove") || argument.equals("-block") || argument.equals("-blocks") || argument.equals("block-")) {
-                        result.add(LookupActions.BLOCK_BREAK);
+                        result.add(0);
                     }
                     else if (argument.equals("placed") || argument.equals("place") || argument.equals("block-place") || argument.equals("+block") || argument.equals("+blocks") || argument.equals("block+")) {
-                        result.add(LookupActions.BLOCK_PLACE);
+                        result.add(1);
                     }
                     else if (argument.equals("block") || argument.equals("blocks") || argument.equals("block-change") || argument.equals("change") || argument.equals("changes")) {
-                        result.add(LookupActions.BLOCK_BREAK);
-                        result.add(LookupActions.BLOCK_PLACE);
+                        result.add(0);
+                        result.add(1);
                     }
                     else if (argument.equals("click") || argument.equals("clicks") || argument.equals("interact") || argument.equals("interaction") || argument.equals("player-interact") || argument.equals("player-interaction") || argument.equals("player-click")) {
-                        result.add(LookupActions.INTERACTION);
+                        result.add(2);
                     }
                     else if (argument.equals("kill") || argument.equals("kills") || argument.equals("entity-kill") || argument.equals("entity-kills")) {
-                        result.add(LookupActions.ENTITY_KILL);
+                        result.add(3);
                     }
                     else if (argument.equals("death") || argument.equals("deaths") || argument.equals("entity-death") || argument.equals("entity-deaths")) {
-                        result.add(LookupActions.ENTITY_KILL);
-                        result.add(LookupActions.ENTITY_DEATH);
+                        result.add(3);
+                        result.add(999);
                     }
                     else if (argument.equals("container") || argument.equals("container-change") || argument.equals("containers") || argument.equals("chest") || argument.equals("transaction") || argument.equals("transactions")) {
-                        result.add(LookupActions.CONTAINER);
+                        result.add(4);
                     }
                     else if (argument.equals("-container") || argument.equals("container-") || argument.equals("remove-container")) {
-                        result.add(LookupActions.CONTAINER);
-                        result.add(ItemTransactionActions.REMOVE);
+                        result.add(4);
+                        result.add(0);
                     }
                     else if (argument.equals("+container") || argument.equals("container+") || argument.equals("container-add") || argument.equals("add-container")) {
-                        result.add(LookupActions.CONTAINER);
-                        result.add(ItemTransactionActions.ADD);
+                        result.add(4);
+                        result.add(1);
                     }
                     else if (argument.equals("chat") || argument.equals("chats")) {
-                        result.add(LookupActions.CHAT);
+                        result.add(6);
                     }
                     else if (argument.equals("command") || argument.equals("commands")) {
-                        result.add(LookupActions.COMMAND);
+                        result.add(7);
                     }
                     else if (argument.equals("logins") || argument.equals("login") || argument.equals("+session") || argument.equals("+sessions") || argument.equals("session+") || argument.equals("+connection") || argument.equals("connection+")) {
-                        result.add(LookupActions.SESSION);
-                        result.add(SessionActions.LOGIN);
+                        result.add(8);
+                        result.add(1);
                     }
                     else if (argument.equals("logout") || argument.equals("logouts") || argument.equals("-session") || argument.equals("-sessions") || argument.equals("session-") || argument.equals("-connection") || argument.equals("connection-")) {
-                        result.add(LookupActions.SESSION);
-                        result.add(SessionActions.LOGOUT);
+                        result.add(8);
+                        result.add(0);
                     }
                     else if (argument.equals("session") || argument.equals("sessions") || argument.equals("connection") || argument.equals("connections")) {
-                        result.add(LookupActions.SESSION);
+                        result.add(8);
                     }
                     else if (argument.equals("username") || argument.equals("usernames") || argument.equals("user") || argument.equals("users") || argument.equals("name") || argument.equals("names") || argument.equals("uuid") || argument.equals("uuids") || argument.equals("username-change") || argument.equals("username-changes") || argument.equals("name-change") || argument.equals("name-changes")) {
-                        result.add(LookupActions.USERNAME);
+                        result.add(9);
                     }
                     else if (argument.equals("sign") || argument.equals("signs")) {
-                        result.add(LookupActions.SIGN);
+                        result.add(10);
                     }
                     else if (argument.equals("inv") || argument.equals("inventory") || argument.equals("inventories")) {
-                        result.add(LookupActions.CONTAINER);
-                        result.add(LookupActions.ITEM);
+                        result.add(4); // container
+                        result.add(11); // item
                     }
                     else if (argument.equals("-inv") || argument.equals("inv-") || argument.equals("-inventory") || argument.equals("inventory-") || argument.equals("-inventories")) {
-                        result.add(LookupActions.CONTAINER);
-                        result.add(LookupActions.ITEM);
-                        result.add(ItemTransactionActions.ADD);
+                        result.add(4);
+                        result.add(11);
+                        result.add(1);
                     }
                     else if (argument.equals("+inv") || argument.equals("inv+") || argument.equals("+inventory") || argument.equals("inventory+") || argument.equals("+inventories")) {
-                        result.add(LookupActions.CONTAINER);
-                        result.add(LookupActions.ITEM);
-                        result.add(ItemTransactionActions.REMOVE);
+                        result.add(4);
+                        result.add(11);
+                        result.add(0);
                     }
                     else if (argument.equals("item") || argument.equals("items")) {
-                        result.add(LookupActions.ITEM);
+                        result.add(11);
                     }
                     else if (argument.equals("-item") || argument.equals("item-") || argument.equals("-items") || argument.equals("items-") || argument.equals("drop") || argument.equals("drops") || argument.equals("deposit") || argument.equals("deposits") || argument.equals("deposited")) {
-                        result.add(LookupActions.ITEM);
-                        result.add(ItemTransactionActions.REMOVE);
+                        result.add(11);
+                        result.add(0);
                     }
                     else if (argument.equals("+item") || argument.equals("item+") || argument.equals("+items") || argument.equals("items+") || argument.equals("pickup") || argument.equals("pickups") || argument.equals("withdraw") || argument.equals("withdraws") || argument.equals("withdrew")) {
-                        result.add(LookupActions.ITEM);
-                        result.add(ItemTransactionActions.ADD);
+                        result.add(11);
+                        result.add(1);
                     }
                     else {
                         result.add(-1);

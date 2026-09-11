@@ -10,7 +10,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.bukkit.Location;
 
 import net.coreprotect.config.ConfigHandler;
-import net.coreprotect.utility.ErrorReporter;
 
 public class CacheHandler implements Runnable {
 
@@ -147,7 +146,7 @@ public class CacheHandler implements Runnable {
                 }
             }
             catch (Exception e) {
-                ErrorReporter.report(e);
+                e.printStackTrace();
             }
         }
     }
@@ -201,7 +200,7 @@ public class CacheHandler implements Runnable {
             }
         }
         catch (Exception e) {
-            ErrorReporter.report(e);
+            e.printStackTrace();
         }
     }
 }

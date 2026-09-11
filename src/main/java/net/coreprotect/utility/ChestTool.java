@@ -87,7 +87,7 @@ public class ChestTool {
                 relativeBlock.setBlockData(chestData, true);
             }
             catch (Exception e) {
-                ErrorReporter.report(e);
+                e.printStackTrace();
             }
         }, relativeBlock.getLocation(), 2);
     }

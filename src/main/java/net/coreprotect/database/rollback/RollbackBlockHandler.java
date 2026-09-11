@@ -53,6 +53,7 @@ import net.coreprotect.utility.EntityUtils;
 import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.WorldUtils;
 import net.coreprotect.utility.entity.HangingUtil;
+import net.coreprotect.utility.ErrorReporter;
 
 public class RollbackBlockHandler extends Queue {
 
@@ -142,8 +143,9 @@ public class RollbackBlockHandler extends Queue {
                 }
 
                 if (rowType == null) {
-                    if (blockData != null) {
-                        BlockUtils.prepareTypeAndData(chunkChanges, block, null, blockData, true);
+                    BlockData customBlockData = blockData != null ? blockData : rawBlockData;
+                    if (customBlockData != null) {
+                        BlockUtils.prepareTypeAndData(chunkChanges, block, null, customBlockData, true);
                         return countBlock;
                     }
 
@@ -543,7 +545,7 @@ public class RollbackBlockHandler extends Queue {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         if ((rowType != Material.AIR) && changeBlock) {

@@ -21,6 +21,7 @@ import net.coreprotect.language.Phrase;
 import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.VersionUtils;
+import net.coreprotect.utility.ErrorReporter;
 
 public class Patch {
 
@@ -83,7 +84,7 @@ public class Patch {
             statement.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return last_version;
@@ -124,7 +125,7 @@ public class Patch {
             });
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return patches;
@@ -143,7 +144,7 @@ public class Patch {
             ConfigHandler.serverRunning = isRunning;
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -187,7 +188,7 @@ public class Patch {
                         }
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        ErrorReporter.report(e);
                     }
 
                     if (success) {
@@ -213,16 +214,16 @@ public class Patch {
             // mark as being up to date
             int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
             if (result >= 0) {
-                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (rowid,time,version) VALUES ('" + CoreProtect.getInstance().rowNumbers().nextRowId("version", connection) + "', '" + unixtimestamp + "', '" + version[0] + "." + version[1] + "." + version[2] + "')");
+                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (rowid,time,version) VALUES ('" + CoreProtect.getInstance().rowNumbers().nextRowNumber("version", connection) + "', '" + unixtimestamp + "', '" + version[0] + "." + version[1] + "." + version[2] + "')");
             }
             else if (patched) {
-                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (rowid,time,version) VALUES ('" + CoreProtect.getInstance().rowNumbers().nextRowId("version", connection) + "', '" + unixtimestamp + "', '" + newVersion[0] + "." + newVersion[1] + "." + newVersion[2] + "')");
+                statement.executeUpdate("INSERT INTO " + ConfigHandler.prefix + "version (rowid,time,version) VALUES ('" + CoreProtect.getInstance().rowNumbers().nextRowNumber("version", connection) + "', '" + unixtimestamp + "', '" + newVersion[0] + "." + newVersion[1] + "." + newVersion[2] + "')");
             }
 
             statement.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         patching = false;
@@ -275,7 +276,7 @@ public class Patch {
                         }
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        ErrorReporter.report(e);
                     }
                 };
 
@@ -298,7 +299,7 @@ public class Patch {
                         }
                     }
                     catch (Exception e) {
-                        e.printStackTrace();
+                        ErrorReporter.report(e);
                     }
                 };
 
@@ -319,7 +320,7 @@ public class Patch {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return true;

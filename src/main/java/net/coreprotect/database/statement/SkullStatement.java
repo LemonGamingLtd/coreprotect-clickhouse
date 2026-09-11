@@ -11,6 +11,7 @@ import org.bukkit.block.BlockState;
 import org.bukkit.block.Skull;
 
 import net.coreprotect.paper.PaperAdapter;
+import net.coreprotect.utility.ErrorReporter;
 
 public class SkullStatement {
 
@@ -18,13 +19,13 @@ public class SkullStatement {
         throw new IllegalStateException("Database class");
     }
 
-    public static int insert(PreparedStatement preparedStmt, int batchCount, int time, String owner, String skin) throws SQLException {
-        final int rowid = CoreProtect.getInstance().rowNumbers().nextRowId("skull", preparedStmt.getConnection());
+    public static long insert(PreparedStatement preparedStmt, int batchCount, int time, String owner, String skin) throws SQLException {
+        final long rowid = CoreProtect.getInstance().rowNumbers().nextRowNumber("skull", preparedStmt.getConnection());
 
         preparedStmt.setInt(1, time);
         preparedStmt.setString(2, owner);
         preparedStmt.setString(3, skin);
-        preparedStmt.setInt(4, rowid);
+        preparedStmt.setLong(4, rowid);
         preparedStmt.addBatch();
 
         if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -50,7 +51,7 @@ public class SkullStatement {
                 }
 
                 String skin = resultSet.getString("skin");
-                if (owner != null && skin != null && skin.length() > 0) {
+                if (skin != null && skin.length() > 0) {
                     PaperAdapter.ADAPTER.setSkullSkin(skull, skin);
                 }
             }
@@ -58,7 +59,7 @@ public class SkullStatement {
             resultSet.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 }

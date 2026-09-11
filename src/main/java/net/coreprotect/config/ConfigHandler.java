@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.command.parser.MaterialParser;
@@ -47,6 +48,7 @@ import net.coreprotect.utility.Chat;
 import net.coreprotect.utility.Color;
 import net.coreprotect.utility.SystemUtils;
 import net.coreprotect.utility.VersionUtils;
+import net.coreprotect.utility.ErrorReporter;
 import oshi.hardware.CentralProcessor;
 
 public class ConfigHandler extends Queue {
@@ -61,9 +63,9 @@ public class ConfigHandler extends Queue {
     public static final String EDITION_NAME = VersionUtils.getPluginName();
     public static final String COMMUNITY_EDITION = "ClickHouse Edition";
     public static final String JAVA_VERSION = "11.0";
-    public static final String MINECRAFT_VERSION = "1.16";
-    public static final String PATCH_VERSION = "23.2";
-    public static final String LATEST_VERSION = "26.1.2";
+    public static final String MINECRAFT_VERSION = "26.2";
+    public static final String PATCH_VERSION = "24.0";
+    public static final String LATEST_VERSION = "26.2";
     public static String path = "plugins/CoreProtect/";
     public static String sqlite = "database.db";
     public static String host = "127.0.0.1";
@@ -82,6 +84,8 @@ public class ConfigHandler extends Queue {
 
     public static HikariDataSource hikariDataSource = null;
     public static final CentralProcessor processorInfo = SystemUtils.getProcessorInfo();
+    public static final boolean isSpigot = true;
+    public static final boolean isPaper = true;
     public static final boolean isFolia = VersionUtils.isFolia();
     public static volatile boolean serverRunning = false;
     public static volatile boolean converterRunning = false;
@@ -95,6 +99,7 @@ public class ConfigHandler extends Queue {
     public static final AtomicInteger MAX_BLOCKDATA_ID = new AtomicInteger();
     public static final AtomicInteger MAX_ENTITY_ID = new AtomicInteger();
     public static final AtomicInteger MAX_ART_ID = new AtomicInteger();
+    public static final AtomicLong autoPurgeRowsPurged = new AtomicLong(0);
     public static final Object WORLD_CACHE_LOCK = new Object();
 
     private static <K, V> Map<K, V> syncMap() {
@@ -300,7 +305,7 @@ public class ConfigHandler extends Queue {
                 MAX_MATERIAL_ID.updateAndGet(curr -> Math.max(id, curr));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -317,7 +322,7 @@ public class ConfigHandler extends Queue {
                 MAX_BLOCKDATA_ID.updateAndGet(curr -> Math.max(id, curr));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -334,7 +339,7 @@ public class ConfigHandler extends Queue {
                 MAX_ART_ID.updateAndGet(curr -> Math.max(id, curr));
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -409,7 +414,7 @@ public class ConfigHandler extends Queue {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return -1;
@@ -639,8 +644,13 @@ public class ConfigHandler extends Queue {
     }
 
     public static void performDisable() {
-        Database.closeConnection();
-        ListenerHandler.unregisterNetworking(); // Unregister channels for networking API
+        try {
+            Database.closeConnection();
+            ListenerHandler.unregisterNetworking(); // Unregister channels for networking API
+        }
+        catch (Exception e) {
+            ErrorReporter.report(e);
+        }
     }
 
 }

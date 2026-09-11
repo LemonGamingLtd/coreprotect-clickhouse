@@ -9,6 +9,7 @@ import java.util.Locale;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.config.ConfigHandler;
+import net.coreprotect.utility.ErrorReporter;
 
 public class UserStatement {
     private static final Object INSERT_LOCK = new Object();
@@ -30,7 +31,7 @@ public class UserStatement {
 
         try (PreparedStatement preparedStmt = connection.prepareStatement(query)) {
             int unixtimestamp = (int) (System.currentTimeMillis() / 1000L);
-            id = CoreProtect.getInstance().rowNumbers().nextRowId("user", connection);
+            id = Math.toIntExact(CoreProtect.getInstance().rowNumbers().nextRowNumber("user", connection)); // still using toIntExact here, replacing all user id ints with longs would be a big change for something that won't happen in my lifetime
 
             int index = 1;
             preparedStmt.setInt(index++, unixtimestamp);
@@ -43,7 +44,7 @@ public class UserStatement {
             preparedStmt.execute();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
         return id;
     }
@@ -102,7 +103,7 @@ public class UserStatement {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return id;
@@ -138,7 +139,7 @@ public class UserStatement {
             statement.close();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
 
         return user;

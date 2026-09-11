@@ -32,6 +32,7 @@ import net.coreprotect.bukkit.BukkitAdapter;
 import net.coreprotect.config.Config;
 import net.coreprotect.config.ConfigHandler;
 import net.coreprotect.database.logger.ItemLogger;
+import net.coreprotect.event.CoreProtectRollbackEvent;
 import net.coreprotect.model.BlockGroup;
 import net.coreprotect.thread.Scheduler;
 import net.coreprotect.utility.BlockUtils;
@@ -259,7 +260,11 @@ public class RollbackProcessor {
             data.clear();
 
             // Apply cached block changes
+            List<Location> changedBlocks = (preview == 0 && !chunkChanges.isEmpty()) ? List.copyOf(chunkChanges.keySet()) : List.of();
             RollbackBlockHandler.applyBlockChanges(chunkChanges, preview, finalUser instanceof Player ? (Player) finalUser : null);
+            if (!changedBlocks.isEmpty()) {
+                new CoreProtectRollbackEvent(bukkitRollbackWorld, finalChunkX, finalChunkZ, changedBlocks, rollbackType == 1).callEvent();
+            }
 
             // Process container items
             Map<Player, List<Integer>> sortPlayers = new HashMap<>();

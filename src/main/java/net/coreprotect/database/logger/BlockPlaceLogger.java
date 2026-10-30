@@ -16,10 +16,12 @@ import net.coreprotect.consumer.data.QueuedBlockState;
 import net.coreprotect.database.statement.BlockStatement;
 import net.coreprotect.database.statement.UserStatement;
 import net.coreprotect.event.CoreProtectPreLogEvent;
+import net.coreprotect.model.action.LookupActions;
 import net.coreprotect.thread.CacheHandler;
 import net.coreprotect.utility.BlockTypeUtils;
 import net.coreprotect.utility.MaterialUtils;
 import net.coreprotect.utility.WorldUtils;
+import net.coreprotect.utility.ErrorReporter;
 
 public class BlockPlaceLogger {
 
@@ -27,15 +29,15 @@ public class BlockPlaceLogger {
         throw new IllegalStateException("Database class");
     }
 
-    public static void log(PreparedStatement preparedStmt, int batchCount, String user, BlockState block, int replacedType, int replacedData, Material forceType, int forceData, boolean force, SerializedBlockMeta meta, String blockData, String replaceBlockData) {
+    public static void log(PreparedStatement preparedStmt, int batchCount, String user, BlockState block, int replacedType, int replacedData, Material forceType, long forceData, boolean force, SerializedBlockMeta meta, String blockData, String replaceBlockData) {
         log(preparedStmt, batchCount, user, block.getLocation(), block.getType(), block.getBlockData().getAsString(), replacedType, replacedData, forceType, forceData, force, meta, blockData, replaceBlockData);
     }
 
-    public static void log(PreparedStatement preparedStmt, int batchCount, String user, QueuedBlockState block, int replacedType, int replacedData, Material forceType, int forceData, boolean force, String blockData, String replaceBlockData) {
+    public static void log(PreparedStatement preparedStmt, int batchCount, String user, QueuedBlockState block, int replacedType, int replacedData, Material forceType, long forceData, boolean force, String blockData, String replaceBlockData) {
         log(preparedStmt, batchCount, user, block.location(), block.type(), block.blockData(), replacedType, replacedData, forceType, forceData, force, block.meta(), blockData, replaceBlockData);
     }
 
-    private static void log(PreparedStatement preparedStmt, int batchCount, String user, Location location, Material snapshotType, String snapshotBlockData, int replacedType, int replacedData, Material forceType, int forceData, boolean force, SerializedBlockMeta meta, String blockData, String replaceBlockData) {
+    private static void log(PreparedStatement preparedStmt, int batchCount, String user, Location location, Material snapshotType, String snapshotBlockData, int replacedType, int replacedData, Material forceType, long forceData, boolean force, SerializedBlockMeta meta, String blockData, String replaceBlockData) {
         try {
             Material type = snapshotType;
             if (blockData == null && (forceType == null || (!forceType.equals(Material.WATER)) && (!forceType.equals(Material.LAVA)))) {
@@ -45,7 +47,7 @@ public class BlockPlaceLogger {
                 }
             }
             String blockKey = BlockTypeUtils.getBlockDataKey(blockData);
-            int data = 0;
+            long data = 0;
             if (forceType != null && force) {
                 type = forceType;
                 if (BukkitAdapter.ADAPTER.isItemFrame(type) || type.equals(Material.SPAWNER) || type.equals(Material.PAINTING) || type.equals(Material.SKELETON_SKULL) || type.equals(Material.SKELETON_WALL_SKULL) || type.equals(Material.WITHER_SKELETON_SKULL) || type.equals(Material.WITHER_SKELETON_WALL_SKULL) || type.equals(Material.ZOMBIE_HEAD) || type.equals(Material.ZOMBIE_WALL_HEAD) || type.equals(Material.PLAYER_HEAD) || type.equals(Material.PLAYER_WALL_HEAD) || type.equals(Material.CREEPER_HEAD) || type.equals(Material.CREEPER_WALL_HEAD) || type.equals(Material.DRAGON_HEAD) || type.equals(Material.DRAGON_WALL_HEAD) || type.equals(Material.ARMOR_STAND) || type.equals(Material.END_CRYSTAL)) {
@@ -101,7 +103,7 @@ public class BlockPlaceLogger {
                 }
             }
 
-            CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user, location, CoreProtectPreLogEvent.Action.BLOCK_PLACE, 1, type, null, null);
+            CoreProtectPreLogEvent event = new CoreProtectPreLogEvent(user, location, CoreProtectPreLogEvent.Action.BLOCK_PLACE, LookupActions.BLOCK_PLACE, type, null, null);
             if (Config.getGlobal().API_ENABLED && !Bukkit.isPrimaryThread()) {
                 CoreProtect.getInstance().getServer().getPluginManager().callEvent(event);
             }
@@ -127,13 +129,13 @@ public class BlockPlaceLogger {
             int internalType = MaterialUtils.getBlockId(blockKey, true);
             int replacedInternalType = MaterialUtils.getBlockId(replaceBlockData, MaterialUtils.getType(replacedType), true);
             if (replacedInternalType > 0 && !BlockTypeUtils.isAir(MaterialUtils.getBlockName(replacedInternalType))) {
-                BlockStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, replacedInternalType, replacedData, null, replaceBlockData, 0, 0);
+                BlockStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, replacedInternalType, replacedData, null, replaceBlockData, LookupActions.BLOCK_BREAK, 0);
             }
 
-            BlockStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, internalType, data, meta, blockData, 1, 0);
+            BlockStatement.insert(preparedStmt, batchCount, time, userId, wid, x, y, z, internalType, data, meta, blockData, LookupActions.BLOCK_PLACE, 0);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 

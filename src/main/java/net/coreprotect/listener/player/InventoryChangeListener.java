@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Tag;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
@@ -41,6 +42,7 @@ import net.coreprotect.paper.PaperAdapter;
 import net.coreprotect.thread.Scheduler;
 import net.coreprotect.utility.ItemUtils;
 import net.coreprotect.utility.Validate;
+import net.coreprotect.utility.ErrorReporter;
 import us.lynuxcraft.deadsilenceiv.advancedchests.AdvancedChestsAPI;
 import us.lynuxcraft.deadsilenceiv.advancedchests.chest.AdvancedChest;
 
@@ -75,7 +77,7 @@ public final class InventoryChangeListener extends Queue implements Listener {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 
@@ -297,7 +299,7 @@ public final class InventoryChangeListener extends Queue implements Listener {
                 onInventoryInteract(player.getName(), inventory, containerState, containerType, inventoryLocation, true);
             }
             catch (Exception e) {
-                e.printStackTrace();
+                ErrorReporter.report(e);
             }
         });
     }
@@ -575,7 +577,7 @@ public final class InventoryChangeListener extends Queue implements Listener {
         }
 
         Item item = event.getItem();
-        if (item == null) {
+        if (item == null || (Config.getConfig(item.getWorld()).DISABLE_HOPPER_CARPET_LOGGING && Tag.WOOL_CARPETS.isTagged(item.getItemStack().getType()))) {
             return;
         }
 

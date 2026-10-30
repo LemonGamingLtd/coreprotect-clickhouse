@@ -4,6 +4,7 @@ import java.sql.PreparedStatement;
 
 import net.coreprotect.CoreProtect;
 import net.coreprotect.config.Config;
+import net.coreprotect.utility.ErrorReporter;
 
 public class ContainerStatement {
 
@@ -25,7 +26,7 @@ public class ContainerStatement {
             preparedStmt.setString(10, itemData);
             preparedStmt.setInt(11, action);
             preparedStmt.setInt(12, rolledBack);
-            preparedStmt.setInt(13, CoreProtect.getInstance().rowNumbers().nextRowId("container", preparedStmt.getConnection()));
+            preparedStmt.setLong(13, CoreProtect.getInstance().rowNumbers().nextRowNumber("container", preparedStmt.getConnection()));
             preparedStmt.addBatch();
 
             if (batchCount > 0 && batchCount % Config.getGlobal().BATCH_SIZE == 0) {
@@ -33,7 +34,7 @@ public class ContainerStatement {
             }
         }
         catch (Exception e) {
-            e.printStackTrace();
+            ErrorReporter.report(e);
         }
     }
 }
